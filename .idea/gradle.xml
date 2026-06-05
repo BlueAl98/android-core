@@ -11,7 +11,7 @@
           <set>
             <option value="$PROJECT_DIR$" />
             <option value="$PROJECT_DIR$/app" />
-            <option value="$PROJECT_DIR$/app/compose-tutorial" />
+            <option value="$PROJECT_DIR$/compose-tutorial" />
             <option value="$PROJECT_DIR$/datastore" />
           </set>
         </option>

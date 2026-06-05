@@ -41,8 +41,6 @@ android {
 
 dependencies {
 
-    implementation(project(":app:compose-tutorial"))
-    implementation(project(":datastore"))
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
     implementation(libs.androidx.activity.compose)
