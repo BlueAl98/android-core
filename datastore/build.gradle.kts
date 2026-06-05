@@ -39,15 +39,16 @@ android {
         }
     }
 }
+group = "com.github.BlueAl98.android-core"
+version = "1.0.10"
 
 afterEvaluate {
     publishing {
         publications {
             create<MavenPublication>("release") {
                 from(components["release"])
-              //  groupId = "com.github.BlueAl98"
                 artifactId = "datastore"
-               // version = "1.0.8"
+               
             }
         }
     }
