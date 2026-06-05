@@ -40,7 +40,7 @@ afterEvaluate {
         publications {
             create<MavenPublication>("release") {
                 from(components["release"])
-                groupId = "com.github.BlueAl98"
+                groupId = "com.github.BlueAl98.android-core"
                 artifactId = "core-datastore"
                 version = "1.0.0"
             }
