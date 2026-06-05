@@ -3,6 +3,7 @@ plugins {
     alias(libs.plugins.jetbrains.kotlin.android)
     alias(libs.plugins.ksp)
     alias(libs.plugins.hilt)
+    `maven-publish`
 }
 
 android {
@@ -31,6 +32,19 @@ android {
     }
     kotlinOptions {
         jvmTarget = "11"
+    }
+}
+
+afterEvaluate {
+    publishing {
+        publications {
+            create<MavenPublication>("release") {
+                from(components["release"])
+                groupId = "com.github.BlueAl98"
+                artifactId = "core-datastore"
+                version = "1.0.0"
+            }
+        }
     }
 }
 
