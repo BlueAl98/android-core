@@ -22,3 +22,4 @@ dependencyResolutionManagement {
 rootProject.name = "Android-core"
 include(":app")
 include(":app:compose-tutorial")
+include(":core:datastore")
