@@ -1,4 +1,2 @@
 jdk:
   - openjdk17
-build:
-  - ./gradlew :core:datastore:assembleRelease :core:datastore:publishReleasePublicationToMavenLocal
