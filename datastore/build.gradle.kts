@@ -47,7 +47,7 @@ afterEvaluate {
                 from(components["release"])
                 groupId = "com.github.BlueAl98"
                 artifactId = "datastore"
-                version = "1.0.6"
+                version = "1.0.7"
             }
         }
     }
