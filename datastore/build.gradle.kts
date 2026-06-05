@@ -45,9 +45,9 @@ afterEvaluate {
         publications {
             create<MavenPublication>("release") {
                 from(components["release"])
-                groupId = "com.github.BlueAl98"
+              //  groupId = "com.github.BlueAl98"
                 artifactId = "datastore"
-                version = "1.0.8"
+               // version = "1.0.8"
             }
         }
     }
