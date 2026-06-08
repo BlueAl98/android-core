@@ -3,10 +3,15 @@ plugins {
     alias(libs.plugins.jetbrains.kotlin.android)
     alias(libs.plugins.ksp)
     alias(libs.plugins.hilt)
-    `maven-publish`
+    id("maven-publish")
+    id("signing")
 }
 
+
+group = "io.github.BlueAl98"
+version = "1.0.0"
 android {
+
     namespace = "com.nayibit.datastore"
     compileSdk = 35
 
@@ -33,25 +38,15 @@ android {
     kotlinOptions {
         jvmTarget = "11"
     }
+
     publishing {
         singleVariant("release") {
             withSourcesJar()
         }
     }
-}
-group = "com.github.BlueAl98.android-core"
-version = "1.0.10"
 
-afterEvaluate {
-    publishing {
-        publications {
-            create<MavenPublication>("release") {
-                from(components["release"])
-                artifactId = "datastore"
-               
-            }
-        }
-    }
+
+
 }
 
 dependencies {
@@ -68,4 +63,50 @@ dependencies {
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
+}
+
+
+signing {
+    useGpgCmd()
+    sign(publishing.publications)
+}
+
+afterEvaluate {
+    publishing {
+        publications {
+            create<MavenPublication>("release") {
+                from(components["release"])
+
+                groupId = "io.github.BlueAl98"
+                artifactId = "datastore"
+                version = "1.0.0"
+
+                pom {
+                    name.set("Nayibit Datastore")
+                    description.set("Android DataStore library")
+                    url.set("https://github.com/BlueAl98/android-core")
+
+                    licenses {
+                        license {
+                            name.set("Apache License 2.0")
+                            url.set("https://www.apache.org/licenses/LICENSE-2.0.txt")
+                        }
+                    }
+
+                    developers {
+                        developer {
+                            id.set("BlueAl98")
+                            name.set("Najib Loera")
+                        }
+                    }
+
+                    scm {
+                        connection.set("scm:git:git://github.com/BlueAl98/android-core.git")
+                        developerConnection.set("scm:git:ssh://github.com/BlueAl98/android-core.git")
+                        url.set("https://github.com/BlueAl98/android-core")
+                    }
+                }
+            }
+        }
+    }
 }
