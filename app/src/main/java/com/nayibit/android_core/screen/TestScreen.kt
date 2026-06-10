@@ -9,6 +9,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.Button
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -24,7 +25,7 @@ import com.nayibit.composables.presentation.components.textFields.TextFieldBase
 import androidx.compose.ui.text.input.ImeAction
 @Composable
 fun TestScreen(){
-    var show = remember { mutableStateOf(false) }
+    var show by remember { mutableStateOf(false) }
     var textField by remember { mutableStateOf("") }
     var textRestriction by remember { mutableStateOf(false) }
 
@@ -41,12 +42,6 @@ fun TestScreen(){
                 .padding(10.dp)
         )
         TextFieldBase(
-            trailingIcon = {
-                Icon(
-                    imageVector = Icons.Default.Search,
-                    contentDescription = "Search"
-                )
-            },
             keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
             showCharCounter = true,
             label = "Segundo",
@@ -55,103 +50,8 @@ fun TestScreen(){
             onValueChange = {},
             modifier = Modifier.fillMaxWidth().padding(10.dp)
         )
-
-        Button(onClick = {
-         show.value = true
-         textRestriction = !textRestriction
-        }) {
-            Text(text = "Show Dialog")
-        }
     }
-    BaseDialog(showDialog = show.value,
-        onDismissRequest = { show.value = false },
-        offsideDismiss = false
-        ) {
-        TextFieldBase(
-            textRestriction = textRestriction,
-            showCharCounter = true,
-            value = textField,
-            label = "Najib",
-            unfocusedColor = Color.Gray,
-            onValueChange = { textField = it },
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(10.dp)
-        )
-        TextFieldBase(
-            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
-            showCharCounter = true,
-            label = "Segundo",
-            unfocusedColor = Color.Gray,
-            value = "",
-            onValueChange = {},
-            modifier = Modifier.fillMaxWidth().padding(10.dp)
-        )
 
-        TextFieldBase(
-            textRestriction = textRestriction,
-            showCharCounter = true,
-            value = textField,
-            label = "Najib",
-            unfocusedColor = Color.Gray,
-            onValueChange = { textField = it },
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(10.dp)
-        )
-        TextFieldBase(
-            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
-            showCharCounter = true,
-            label = "Segundo",
-            unfocusedColor = Color.Gray,
-            value = "",
-            onValueChange = {},
-            modifier = Modifier.fillMaxWidth().padding(10.dp)
-        )
-
-        TextFieldBase(
-            textRestriction = textRestriction,
-            showCharCounter = true,
-            value = textField,
-            label = "Najib",
-            unfocusedColor = Color.Gray,
-            onValueChange = { textField = it },
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(10.dp)
-        )
-        TextFieldBase(
-            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
-            showCharCounter = true,
-            label = "Segundo",
-            unfocusedColor = Color.Gray,
-            value = "",
-            onValueChange = {},
-            modifier = Modifier.fillMaxWidth().padding(10.dp)
-        )
-        TextFieldBase(
-            textRestriction = textRestriction,
-            showCharCounter = true,
-            value = textField,
-            label = "Najib",
-            unfocusedColor = Color.Gray,
-            onValueChange = { textField = it },
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(10.dp)
-        )
-        TextFieldBase(
-            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
-            showCharCounter = true,
-            label = "Segundo",
-            unfocusedColor = Color.Gray,
-            value = "",
-            onValueChange = {},
-            modifier = Modifier.fillMaxWidth().padding(10.dp)
-        )
-
-
-    }
 }
 
 @Preview(showBackground = true)

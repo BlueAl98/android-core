@@ -9,6 +9,11 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Warning
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
@@ -56,8 +61,43 @@ fun TextFieldBase(
     visualTransformation: VisualTransformation = VisualTransformation.None,
     focusedColor: Color = MaterialTheme.colorScheme.primary,
     unfocusedColor: Color = MaterialTheme.colorScheme.onSurfaceVariant,
-    errorColor: Color = MaterialTheme.colorScheme.error
+    errorColor: Color = MaterialTheme.colorScheme.error,
+    showWarning: Boolean = false,
+    warningMessage: String? = null,
+    warningIcon: (@Composable () -> Unit)? = null,
+    warningIconTint: Color? = null
 ) {
+
+    var warningPopupExpanded by remember { mutableStateOf(false) }
+
+    val effectiveTrailingIcon: (@Composable () -> Unit)? = if (showWarning) {
+        {
+            Box {
+                IconButton(onClick = { if (warningMessage != null) warningPopupExpanded = true }) {
+                    warningIcon?.invoke() ?: Icon(
+                        imageVector = Icons.Default.Warning,
+                        contentDescription = "Warning",
+                        tint = warningIconTint ?: errorColor
+                    )
+                }
+                if (warningMessage != null) {
+                    DropdownMenu(
+                        expanded = warningPopupExpanded,
+                        onDismissRequest = { warningPopupExpanded = false }
+                    ) {
+                        Text(
+                            text = warningMessage,
+                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+                    }
+                }
+            }
+        }
+    } else {
+        trailingIcon
+    }
 
     val colors: TextFieldColors = TextFieldDefaults.colors(
         focusedTextColor = MaterialTheme.colorScheme.onSurface,
@@ -84,7 +124,7 @@ fun TextFieldBase(
             label = label?.let { { Text(it) } },
             placeholder = placeholder?.let { { Text(it) } },
             leadingIcon = leadingIcon,
-            trailingIcon = trailingIcon,
+            trailingIcon = effectiveTrailingIcon,
             singleLine = singleLine,
             maxLines = maxLines,
             isError = isError,
