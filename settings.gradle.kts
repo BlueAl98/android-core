@@ -23,3 +23,4 @@ rootProject.name = "Android-core"
 include(":app")
 include(":compose-tutorial")
 include(":datastore")
+include(":composables")
