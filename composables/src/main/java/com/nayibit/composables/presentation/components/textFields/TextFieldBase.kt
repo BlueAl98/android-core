@@ -65,7 +65,8 @@ fun TextFieldBase(
     showWarning: Boolean = false,
     warningMessage: String? = null,
     warningIcon: (@Composable () -> Unit)? = null,
-    warningIconTint: Color? = null
+    warningIconTint: Color? = null,
+    charCounterAlignment: Alignment = Alignment.BottomEnd
 ) {
 
     var warningPopupExpanded by remember { mutableStateOf(false) }
@@ -143,8 +144,13 @@ fun TextFieldBase(
             enter = fadeIn(),
             exit = fadeOut(),
             modifier = Modifier
-                .align(Alignment.BottomEnd)
-                .padding(end = 12.dp, top = 16.dp, bottom = 2.dp)
+                .align(charCounterAlignment)
+                .padding(
+                    start = if (charCounterAlignment == Alignment.BottomStart) 12.dp else 0.dp,
+                    end = if (charCounterAlignment == Alignment.BottomEnd) 12.dp else 0.dp,
+                    top = 16.dp,
+                    bottom = 2.dp
+                )
         ) {
             Text(
                 text = "${value.length} / $maxChar",
