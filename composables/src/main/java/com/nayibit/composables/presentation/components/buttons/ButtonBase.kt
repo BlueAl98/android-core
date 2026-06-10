@@ -3,6 +3,7 @@ package com.nayibit.composables.presentation.components.buttons
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.graphics.Shape
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -26,7 +27,7 @@ fun ButtonBase(
     contentColor: Color = Color.White,
     disabledBackgroundColor: Color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.30f),
     disabledContentColor: Color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f),
-    shapeRadius: Int = 8,
+    shape: Shape = RoundedCornerShape(8.dp),
     textStyle: TextStyle = MaterialTheme.typography.labelLarge,
     customContent: (@Composable () -> Unit)? = null
 ) {
@@ -40,7 +41,7 @@ fun ButtonBase(
             disabledContainerColor = disabledBackgroundColor,
             disabledContentColor = disabledContentColor
         ),
-        shape = RoundedCornerShape(shapeRadius.dp)
+        shape = shape
     ) {
         if (loading) {
             CircularProgressIndicator(
