@@ -21,6 +21,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.input.TextFieldValue
@@ -91,6 +92,13 @@ fun <T> DropdownMenuBase(
                     enabled = enabled
                 )
                 .fillMaxWidth()
+                .onFocusChanged { focusState ->
+                    if (focusState.isFocused && searchable && !expanded) {
+                        val text = selectedItem?.let { labelSelector(it) } ?: ""
+                        searchQuery = TextFieldValue(text, selection = TextRange(text.length))
+                        expanded = true
+                    }
+                }
                 .then(
                     if (!searchable) Modifier.clickable(enabled = enabled) { expanded = !expanded }
                     else Modifier
