@@ -4,7 +4,9 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.ArrowDropDown
+import androidx.compose.material.icons.filled.KeyboardArrowDown
+import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExposedDropdownMenuBox
@@ -43,7 +45,7 @@ fun <T> DropdownMenuBase(
     label: String = "Select Item",
     enabled: Boolean = true,
     searchable: Boolean = false,
-    showSearchIcon: Boolean = false,
+    showIconDropdown: Boolean = false,
     nextFocusRequester: FocusRequester? = null,
     leadingIcon: (@Composable () -> Unit)? = null,
     trailingIcon: (@Composable () -> Unit)? = null,
@@ -58,8 +60,8 @@ fun <T> DropdownMenuBase(
 
     val effectiveTrailingIcon: (@Composable () -> Unit)? = trailingIcon?.let {
         { CompositionLocalProvider(LocalContentColor provides iconColor) { it() } }
-    } ?: if (showSearchIcon) ({
-        Icon(Icons.Default.Search, contentDescription = null, tint = iconColor)
+    } ?: if (showIconDropdown) ({
+         Icon(if (isFocused) Icons.Default.KeyboardArrowUp else Icons.Default.KeyboardArrowDown, contentDescription = null, tint = iconColor)
     }) else null
 
     val effectiveLeadingIcon: (@Composable () -> Unit)? = leadingIcon?.let {
