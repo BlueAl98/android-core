@@ -3,10 +3,13 @@ package com.nayibit.composables.presentation.components.dropMenus
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExposedDropdownMenuBox
 import androidx.compose.material3.ExposedDropdownMenuDefaults
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.MenuAnchorType
 import androidx.compose.material3.OutlinedTextField
@@ -38,9 +41,16 @@ fun <T> DropdownMenuBase(
     label: String = "Select Item",
     enabled: Boolean = true,
     searchable: Boolean = false,
-    nextFocusRequester: FocusRequester? = null
+    showSearchIcon: Boolean = false,
+    nextFocusRequester: FocusRequester? = null,
+    leadingIcon: (@Composable () -> Unit)? = null,
+    trailingIcon: (@Composable () -> Unit)? = null
 ) {
     val focusManager = LocalFocusManager.current
+    val effectiveTrailingIcon: (@Composable () -> Unit)? = trailingIcon
+        ?: if (showSearchIcon) ({ Icon(Icons.Default.Search, contentDescription = null) })
+        else null
+
     var expanded by remember { mutableStateOf(false) }
     var searchQuery by remember { mutableStateOf(TextFieldValue("")) }
 
@@ -84,6 +94,8 @@ fun <T> DropdownMenuBase(
             },
             readOnly = !searchable,
             label = { Text(label) },
+            leadingIcon = leadingIcon,
+            trailingIcon = effectiveTrailingIcon,
             colors = colors,
             modifier = Modifier
                 .menuAnchor(
