@@ -10,6 +10,7 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExposedDropdownMenuBox
 import androidx.compose.material3.ExposedDropdownMenuDefaults
 import androidx.compose.material3.Icon
+import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.MenuAnchorType
 import androidx.compose.material3.OutlinedTextField
@@ -21,6 +22,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.focus.FocusRequester
@@ -44,12 +46,25 @@ fun <T> DropdownMenuBase(
     showSearchIcon: Boolean = false,
     nextFocusRequester: FocusRequester? = null,
     leadingIcon: (@Composable () -> Unit)? = null,
-    trailingIcon: (@Composable () -> Unit)? = null
+    trailingIcon: (@Composable () -> Unit)? = null,
+    focusedColor: Color = MaterialTheme.colorScheme.primary,
+    unfocusedColor: Color = MaterialTheme.colorScheme.onSurfaceVariant,
+    textColor: Color = MaterialTheme.colorScheme.onSurface,
+    containerColor: Color = Color.Transparent,
 ) {
     val focusManager = LocalFocusManager.current
-    val effectiveTrailingIcon: (@Composable () -> Unit)? = trailingIcon
-        ?: if (showSearchIcon) ({ Icon(Icons.Default.Search, contentDescription = null) })
-        else null
+    var isFocused by remember { mutableStateOf(false) }
+    val iconColor = if (isFocused) focusedColor else unfocusedColor
+
+    val effectiveTrailingIcon: (@Composable () -> Unit)? = trailingIcon?.let {
+        { CompositionLocalProvider(LocalContentColor provides iconColor) { it() } }
+    } ?: if (showSearchIcon) ({
+        Icon(Icons.Default.Search, contentDescription = null, tint = iconColor)
+    }) else null
+
+    val effectiveLeadingIcon: (@Composable () -> Unit)? = leadingIcon?.let {
+        { CompositionLocalProvider(LocalContentColor provides iconColor) { it() } }
+    }
 
     var expanded by remember { mutableStateOf(false) }
     var searchQuery by remember { mutableStateOf(TextFieldValue("")) }
@@ -63,15 +78,16 @@ fun <T> DropdownMenuBase(
     }
 
     val colors: TextFieldColors = TextFieldDefaults.colors(
-        focusedTextColor = MaterialTheme.colorScheme.onSurface,
-        unfocusedTextColor = MaterialTheme.colorScheme.onSurface,
-        errorTextColor = MaterialTheme.colorScheme.onSurface,
-        focusedContainerColor = Color.Transparent,
-        unfocusedContainerColor = Color.Transparent,
-        errorContainerColor = Color.Transparent,
-        focusedIndicatorColor = MaterialTheme.colorScheme.primary,
-        unfocusedIndicatorColor = MaterialTheme.colorScheme.onSurfaceVariant,
-        focusedLabelColor = MaterialTheme.colorScheme.primary,
+        focusedTextColor = textColor,
+        unfocusedTextColor = textColor,
+        errorTextColor = textColor,
+        focusedContainerColor = containerColor,
+        unfocusedContainerColor = containerColor,
+        errorContainerColor = containerColor,
+        focusedIndicatorColor = focusedColor,
+        unfocusedIndicatorColor = unfocusedColor,
+        focusedLabelColor = focusedColor,
+        unfocusedLabelColor = unfocusedColor,
     )
 
     ExposedDropdownMenuBox(
@@ -94,7 +110,7 @@ fun <T> DropdownMenuBase(
             },
             readOnly = !searchable,
             label = { Text(label) },
-            leadingIcon = leadingIcon,
+            leadingIcon = effectiveLeadingIcon,
             trailingIcon = effectiveTrailingIcon,
             colors = colors,
             modifier = Modifier
@@ -105,6 +121,7 @@ fun <T> DropdownMenuBase(
                 )
                 .fillMaxWidth()
                 .onFocusChanged { focusState ->
+                    isFocused = focusState.isFocused
                     if (focusState.isFocused && searchable && !expanded) {
                         val text = selectedItem?.let { labelSelector(it) } ?: ""
                         searchQuery = TextFieldValue(text, selection = TextRange(text.length))
