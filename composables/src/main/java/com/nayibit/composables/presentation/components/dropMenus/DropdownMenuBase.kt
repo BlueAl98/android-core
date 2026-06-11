@@ -3,11 +3,14 @@ package com.nayibit.composables.presentation.components.dropMenus
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExposedDropdownMenuBox
 import androidx.compose.material3.ExposedDropdownMenuDefaults
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.MenuAnchorType
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextFieldColors
@@ -19,6 +22,9 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.text.TextRange
+import androidx.compose.ui.text.input.TextFieldValue
 
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -30,9 +36,22 @@ fun <T> DropdownMenuBase(
     labelSelector: (T) -> String,
     modifier: Modifier = Modifier,
     label: String = "Select Item",
-    enabled: Boolean = true
+    enabled: Boolean = true,
+    searchable: Boolean = false,
+    keyboardOptions: KeyboardOptions = KeyboardOptions.Default,
+    keyboardActions: KeyboardActions = KeyboardActions.Default
 ) {
+    val focusManager = LocalFocusManager.current
     var expanded by remember { mutableStateOf(false) }
+    var searchQuery by remember { mutableStateOf(TextFieldValue("")) }
+
+    val displayedItems = remember(searchQuery.text, items) {
+        if (searchable && searchQuery.text.isNotEmpty()) {
+            items.filter { labelSelector(it).contains(searchQuery.text, ignoreCase = true) }
+        } else {
+            items
+        }
+    }
 
     val colors: TextFieldColors = TextFieldDefaults.colors(
         focusedTextColor = MaterialTheme.colorScheme.onSurface,
@@ -46,33 +65,53 @@ fun <T> DropdownMenuBase(
         focusedLabelColor = MaterialTheme.colorScheme.primary,
     )
 
-
     ExposedDropdownMenuBox(
         expanded = expanded,
-        onExpandedChange = { expanded = it && enabled },
+        onExpandedChange = { next ->
+            if (!enabled) return@ExposedDropdownMenuBox
+            if (next && searchable) {
+                val text = selectedItem?.let { labelSelector(it) } ?: ""
+                searchQuery = TextFieldValue(text, selection = TextRange(text.length))
+            }
+            expanded = next
+        },
         modifier = modifier
     ) {
         OutlinedTextField(
-            value = selectedItem?.let { labelSelector(it) } ?: "",
-            onValueChange = {},
-            readOnly = true,
+            value = if (searchable && expanded) searchQuery
+                    else TextFieldValue(selectedItem?.let { labelSelector(it) } ?: ""),
+            onValueChange = { input ->
+                if (searchable) searchQuery = input
+            },
+            readOnly = !searchable,
             label = { Text(label) },
             colors = colors,
+            keyboardOptions = keyboardOptions,
+            keyboardActions = keyboardActions,
             modifier = Modifier
-                .menuAnchor()
+                .menuAnchor(
+                    type = if (searchable) MenuAnchorType.PrimaryEditable
+                           else MenuAnchorType.PrimaryNotEditable,
+                    enabled = enabled
+                )
                 .fillMaxWidth()
-               .clickable(enabled = enabled) {
-                   expanded = !expanded }
-            ,
+                .then(
+                    if (!searchable) Modifier.clickable(enabled = enabled) { expanded = !expanded }
+                    else Modifier
+                ),
             enabled = enabled
         )
 
         ExposedDropdownMenu(
             expanded = expanded,
-            onDismissRequest = { expanded = false },
+            onDismissRequest = {
+                expanded = false
+                searchQuery = TextFieldValue("")
+                focusManager.clearFocus()
+            },
             modifier = Modifier.exposedDropdownSize()
         ) {
-            items.forEach { item ->
+            displayedItems.forEach { item ->
                 DropdownMenuItem(
                     text = {
                         Column {
@@ -84,7 +123,9 @@ fun <T> DropdownMenuBase(
                     },
                     onClick = {
                         onItemSelected(item)
+                        searchQuery = TextFieldValue("")
                         expanded = false
+                        focusManager.clearFocus()
                     },
                     contentPadding = ExposedDropdownMenuDefaults.ItemContentPadding
                 )
@@ -92,5 +133,3 @@ fun <T> DropdownMenuBase(
         }
     }
 }
-
-
