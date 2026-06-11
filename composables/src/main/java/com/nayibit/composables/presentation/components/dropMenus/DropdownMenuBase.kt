@@ -3,8 +3,6 @@ package com.nayibit.composables.presentation.components.dropMenus
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.text.KeyboardActions
-import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExposedDropdownMenuBox
@@ -22,6 +20,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.input.TextFieldValue
@@ -38,8 +37,7 @@ fun <T> DropdownMenuBase(
     label: String = "Select Item",
     enabled: Boolean = true,
     searchable: Boolean = false,
-    keyboardOptions: KeyboardOptions = KeyboardOptions.Default,
-    keyboardActions: KeyboardActions = KeyboardActions.Default
+    nextFocusRequester: FocusRequester? = null
 ) {
     val focusManager = LocalFocusManager.current
     var expanded by remember { mutableStateOf(false) }
@@ -86,8 +84,6 @@ fun <T> DropdownMenuBase(
             readOnly = !searchable,
             label = { Text(label) },
             colors = colors,
-            keyboardOptions = keyboardOptions,
-            keyboardActions = keyboardActions,
             modifier = Modifier
                 .menuAnchor(
                     type = if (searchable) MenuAnchorType.PrimaryEditable
@@ -125,7 +121,8 @@ fun <T> DropdownMenuBase(
                         onItemSelected(item)
                         searchQuery = TextFieldValue("")
                         expanded = false
-                        focusManager.clearFocus()
+                        if (nextFocusRequester != null) nextFocusRequester.requestFocus()
+                        else focusManager.clearFocus()
                     },
                     contentPadding = ExposedDropdownMenuDefaults.ItemContentPadding
                 )
