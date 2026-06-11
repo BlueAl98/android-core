@@ -1,5 +1,6 @@
 package com.nayibit.composables.presentation.components.buttons
 
+import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.Spring
@@ -44,7 +45,8 @@ enum class ButtonPressAnimation {
     None,
     Scale,   // subtle uniform shrink on press, smooth return
     Bounce,  // shrinks more, springs back with overshoot
-    Squish   // flattens vertically and widens on press
+    Squish,  // flattens vertically and widens on press
+    Tint     // fades a color overlay on press — no scale, just a color flash
 }
 
 @Composable
@@ -71,7 +73,10 @@ fun ButtonBase(
     holdFillActive: Boolean = false,
     holdFillColor: Color = Color.White.copy(alpha = 0.25f),
     holdFillDurationMillis: Int = 1000,
-    onHoldComplete: (() -> Unit)? = null
+    onHoldComplete: (() -> Unit)? = null,
+    tintOverlayColor: Color = Color.White.copy(alpha = 0.18f),
+    textButton: Boolean = false,
+    textButtonPressedColor: Color? = null
 ) {
     val interactionSource = remember { MutableInteractionSource() }
     val isPressed by interactionSource.collectIsPressedAsState()
@@ -102,6 +107,21 @@ fun ButtonBase(
         },
         animationSpec = if (pressAnimation == ButtonPressAnimation.Bounce) bouncy else smooth,
         label = "pressScaleY"
+    )
+
+    // Text button press color
+    val pressedTextColor = textButtonPressedColor ?: contentColor.copy(alpha = 0.5f)
+    val currentTextColor by animateColorAsState(
+        targetValue = if (textButton && isPressed) pressedTextColor else contentColor,
+        animationSpec = tween(120),
+        label = "textButtonColor"
+    )
+
+    // Tint overlay animation
+    val tintProgress by animateFloatAsState(
+        targetValue = if (isPressed && pressAnimation == ButtonPressAnimation.Tint) 1f else 0f,
+        animationSpec = tween(100),
+        label = "tintProgress"
     )
 
     // Hold fill animation
@@ -158,18 +178,34 @@ fun ButtonBase(
                 }
             }
         } else Modifier)
-        .then(if (pressAnimation != ButtonPressAnimation.None)
+        .then(if (pressAnimation == ButtonPressAnimation.Tint) Modifier.drawWithContent {
+            drawContent()
+            if (tintProgress > 0f) {
+                val outline = shape.createOutline(size, layoutDirection, this)
+                val clipPath = Path().apply {
+                    when (outline) {
+                        is Outline.Generic -> addPath(outline.path)
+                        is Outline.Rounded -> addRoundRect(outline.roundRect)
+                        is Outline.Rectangle -> addRect(outline.rect)
+                    }
+                }
+                clipPath(clipPath) {
+                    drawRect(color = tintOverlayColor.copy(alpha = tintOverlayColor.alpha * tintProgress))
+                }
+            }
+        } else Modifier)
+        .then(if (pressAnimation != ButtonPressAnimation.None && pressAnimation != ButtonPressAnimation.Tint)
             Modifier.scale(scaleX = scaleX, scaleY = scaleY) else Modifier)
 
     Button(
         onClick = onClick,
-        modifier = resolvedModifier.fillMaxWidth(),
+        modifier = if (textButton) resolvedModifier else resolvedModifier.fillMaxWidth(),
         enabled = enabled && !loading,
         interactionSource = interactionSource,
         colors = ButtonDefaults.buttonColors(
-            containerColor = backgroundColor,
-            contentColor = contentColor,
-            disabledContainerColor = disabledBackgroundColor,
+            containerColor = if (textButton) Color.Transparent else backgroundColor,
+            contentColor = currentTextColor,
+            disabledContainerColor = if (textButton) Color.Transparent else disabledBackgroundColor,
             disabledContentColor = disabledContentColor
         ),
         shape = shape
