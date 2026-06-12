@@ -17,9 +17,6 @@ data class User(val id: Int, val name: String)
 // Simulates the exception Retrofit/Ktor would throw for HTTP errors
 data class FakeHttpException(val code: Int, val body: String) : Exception("HTTP $code")
 
-data class errorFinal(val error : String,
-val message : String)
-
 @Composable
 fun TestScreen() {
     LaunchedEffect(Unit) {
@@ -39,15 +36,7 @@ fun TestScreen() {
        safeCall<User> {
             throw FakeHttpException(404, """{"error":"user_not_found","message":"No user with that id"}""")
         }.onFailure { e->
-           when (e) {
-               is AppError.Http -> {
-                   val rawBody = e.rawBody
 
-                   Log.d(TAG, "HTTP ${e.code} — body: ${e.rawBody}")
-               }
-               is AppError.Network -> Log.d(TAG, "Network error: ${e.message}")
-               else -> Log.d(TAG, "Unknown: ${e.message}")
-           }
         }
 
 
