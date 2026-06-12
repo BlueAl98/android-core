@@ -42,6 +42,7 @@ android {
 dependencies {
 
     implementation(project(":composables"))
+    implementation(project(":errorManager"))
 
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)

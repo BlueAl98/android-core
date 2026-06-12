@@ -1,101 +1,60 @@
 package com.nayibit.android_core.screen
 
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.Text
+import android.util.Log
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.tooling.preview.Preview
-import androidx.compose.ui.unit.dp
-import com.nayibit.composables.presentation.components.buttons.ButtonBase
-import com.nayibit.composables.presentation.components.customShapes.DiamondShape
-import com.nayibit.composables.presentation.components.customShapes.PolygonShape
-import com.nayibit.composables.presentation.components.customShapes.StarShape
-import com.nayibit.composables.presentation.components.customShapes.UniformCircleShape
+import com.nayibit.errorManager.AppError
+import com.nayibit.errorManager.ErrorManager
+import com.nayibit.errorManager.HttpErrorInfo
+import com.nayibit.errorManager.safeCall
+import java.io.IOException
+
+private const val TAG = "ErrorManagerTest"
+
+data class User(val id: Int, val name: String)
+
+// Simulates the exception Retrofit/Ktor would throw for HTTP errors
+data class FakeHttpException(val code: Int, val body: String) : Exception("HTTP $code")
+
+data class errorFinal(val error : String,
+val message : String)
 
 @Composable
 fun TestScreen() {
-    Column(
-        Modifier
-            .fillMaxSize()
-            .verticalScroll(rememberScrollState())
-            .padding(20.dp)
-    ) {
-        Text("Snake — solid color (default shape)")
-        Spacer(Modifier.height(8.dp))
-        ButtonBase(
-            text = "Press me",
-            onClick = {},
-            backgroundColor = Color(0xFF1A237E),
-            snakeActive = true
-         //   snakeBrush = SolidColor(Color.Cyan),
-           // snakeStrokeWidth = 3.dp
+    LaunchedEffect(Unit) {
+
+        ErrorManager.configure(
+            httpAdapter = { e ->
+                if (e is FakeHttpException) HttpErrorInfo(e.code, e.body) else null
+            },
+            errorParser = { code, rawBody ->
+                // rawBody is the JSON string your backend returns on error
+                // parse it however your project needs
+                AppError.Http(code, rawBody)
+            }
         )
 
-        Spacer(Modifier.height(24.dp))
+        // Fake a backend call that returns 404
+       safeCall<User> {
+            throw FakeHttpException(404, """{"error":"user_not_found","message":"No user with that id"}""")
+        }.onFailure { e->
+           when (e) {
+               is AppError.Http -> {
+                   val rawBody = e.rawBody
 
-        Text("Snake — gradient on star")
-        Spacer(Modifier.height(8.dp))
-        ButtonBase(
-            text = "Star",
-            onClick = {},
-            shape = StarShape(points = 5),
-            backgroundColor = Color(0xFF311B92),
-            modifier = Modifier.size(140.dp),
-            snakeActive = true,
-            snakeBrush = Brush.sweepGradient(listOf(Color.Magenta, Color.Yellow, Color.Cyan)),
-            snakeStrokeWidth = 4.dp,
-            snakeSegmentFraction = 0.3f,
-            snakeDurationMillis = 2000
-        )
+                   Log.d(TAG, "HTTP ${e.code} — body: ${e.rawBody}")
+               }
+               is AppError.Network -> Log.d(TAG, "Network error: ${e.message}")
+               else -> Log.d(TAG, "Unknown: ${e.message}")
+           }
+        }
 
-        Spacer(Modifier.height(24.dp))
 
-        Text("Snake — circle")
-        Spacer(Modifier.height(8.dp))
-        ButtonBase(
-            text = "Go",
-            onClick = {},
-            shape = UniformCircleShape(),
-            backgroundColor = Color(0xFF004D40),
-            modifier = Modifier.size(120.dp),
-            snakeActive = true,
-            snakeBrush = Brush.linearGradient(listOf(Color.Green, Color.Yellow)),
-            snakeStrokeWidth = 5.dp,
-            snakeSegmentFraction = 0.2f,
-            snakeDurationMillis = 1000
-        )
 
-        Spacer(Modifier.height(24.dp))
 
-        Text("Snake off (reference)")
-        Spacer(Modifier.height(8.dp))
-        ButtonBase(text = "Normal", onClick = {})
-        Spacer(Modifier.height(8.dp))
-        ButtonBase(
-            text = "♦",
-            onClick = {},
-            shape = DiamondShape(),
-            backgroundColor = Color(0xFFE91E63),
-            modifier = Modifier.size(120.dp)
-        )
-        Spacer(Modifier.height(8.dp))
-        ButtonBase(
-            text = "Hex",
-            onClick = {},
-            shape = PolygonShape(sides = 6),
-            backgroundColor = Color(0xFF6200EE),
-            modifier = Modifier.size(120.dp)
-        )
+
+
     }
 }
 
