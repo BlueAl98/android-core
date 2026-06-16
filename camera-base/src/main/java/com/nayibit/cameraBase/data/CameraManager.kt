@@ -4,6 +4,7 @@ import android.Manifest
 import android.content.Context
 import android.content.pm.PackageManager
 import android.net.Uri
+import androidx.camera.core.Camera
 import androidx.camera.core.CameraSelector
 import androidx.camera.core.ImageCapture
 import androidx.camera.core.ImageCaptureException
@@ -23,14 +24,22 @@ class CameraManager(
 ) {
     private var cameraProvider: ProcessCameraProvider? = null
     private var imageCapture: ImageCapture? = null
+    private var camera: Camera? = null
 
     fun hasPermission(): Boolean =
         ContextCompat.checkSelfPermission(context, Manifest.permission.CAMERA) ==
                 PackageManager.PERMISSION_GRANTED
 
+    fun setFlashMode(mode: Int) {
+        imageCapture?.flashMode = mode
+        // Torch (continuous LED) mirrors the flash button state so the preview reflects it
+        camera?.cameraControl?.enableTorch(mode == ImageCapture.FLASH_MODE_ON)
+    }
+
     fun startPreview(
         previewView: PreviewView,
         lensFacing: Int = CameraSelector.LENS_FACING_BACK,
+        flashMode: Int = ImageCapture.FLASH_MODE_OFF,
         onReady: () -> Unit = {},
         onError: (CameraError) -> Unit
     ) {
@@ -44,7 +53,7 @@ class CameraManager(
             try {
                 val provider = providerFuture.get()
                 cameraProvider = provider
-                bindCamera(provider, previewView, lensFacing, onReady, onError)
+                bindCamera(provider, previewView, lensFacing, flashMode, onReady, onError)
             } catch (e: Exception) {
                 onError(CameraError.InitFailed(e))
             }
@@ -55,6 +64,7 @@ class CameraManager(
         provider: ProcessCameraProvider,
         previewView: PreviewView,
         lensFacing: Int,
+        flashMode: Int,
         onReady: () -> Unit,
         onError: (CameraError) -> Unit
     ) {
@@ -65,6 +75,7 @@ class CameraManager(
 
             imageCapture = ImageCapture.Builder()
                 .setCaptureMode(ImageCapture.CAPTURE_MODE_MINIMIZE_LATENCY)
+                .setFlashMode(flashMode)
                 .build()
 
             val selector = CameraSelector.Builder()
@@ -72,7 +83,11 @@ class CameraManager(
                 .build()
 
             provider.unbindAll()
-            provider.bindToLifecycle(lifecycleOwner, selector, preview, imageCapture!!)
+            camera = provider.bindToLifecycle(lifecycleOwner, selector, preview, imageCapture!!)
+            // Restore torch if flash was ON before a camera flip
+            if (flashMode == ImageCapture.FLASH_MODE_ON) {
+                camera?.cameraControl?.enableTorch(true)
+            }
             onReady()
         } catch (e: Exception) {
             onError(CameraError.BindingFailed(e))
@@ -140,8 +155,10 @@ class CameraManager(
     }
 
     fun stopPreview() {
+        camera?.cameraControl?.enableTorch(false)
         cameraProvider?.unbindAll()
         cameraProvider = null
         imageCapture = null
+        camera = null
     }
 }

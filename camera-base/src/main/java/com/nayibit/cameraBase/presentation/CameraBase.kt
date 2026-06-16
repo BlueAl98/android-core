@@ -50,7 +50,17 @@ fun CameraBase(
     permissionContent: @Composable BoxScope.(onRequest: () -> Unit) -> Unit = { onRequest ->
         DefaultCameraPermissionContent(onRequest)
     },
-    overlayContent: @Composable BoxScope.(scope: CameraScope) -> Unit = {},
+    overlayContent: @Composable BoxScope.(scope: CameraScope) -> Unit = { scope ->
+        CameraControls(
+            onCapture = { scope.saveToCache { } },
+            onFlip = scope::flipCamera,
+            flashMode = state.flashMode,
+            onFlashToggle = { newMode ->
+                state.flashMode = newMode
+                scope.setFlashMode(newMode)
+            }
+        )
+    },
     errorContent: @Composable BoxScope.(error: CameraError, onDismiss: () -> Unit) -> Unit = { error, onDismiss ->
         DefaultCameraErrorContent(error, onDismiss)
     }
@@ -79,6 +89,9 @@ fun CameraBase(
                 cameraManager.saveToFile(file, onResult)
 
             override fun flipCamera() = state.flipCamera()
+
+            override fun setFlashMode(mode: FlashMode) =
+                cameraManager.setFlashMode(mode.toCameraX())
         }
     }
 
@@ -96,6 +109,7 @@ fun CameraBase(
                                 cameraManager.startPreview(
                                     previewView = previewView,
                                     lensFacing = state.lensFacing,
+                                    flashMode = state.flashMode.toCameraX(),
                                     onError = { state.error = it }
                                 )
                             }

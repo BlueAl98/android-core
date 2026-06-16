@@ -3,6 +3,7 @@ package com.nayibit.cameraBase.presentation
 import android.Manifest
 import android.content.pm.PackageManager
 import androidx.camera.core.CameraSelector
+import androidx.camera.core.ImageCapture
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.getValue
@@ -15,6 +16,22 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LifecycleEventEffect
 import com.nayibit.cameraBase.data.error.CameraError
 
+enum class FlashMode {
+    OFF, ON, AUTO;
+
+    fun next() = when (this) {
+        OFF -> ON
+        ON -> AUTO
+        AUTO -> OFF
+    }
+
+    fun toCameraX(): Int = when (this) {
+        OFF -> ImageCapture.FLASH_MODE_OFF
+        ON -> ImageCapture.FLASH_MODE_ON
+        AUTO -> ImageCapture.FLASH_MODE_AUTO
+    }
+}
+
 @Stable
 class CameraBaseState(
     initialLensFacing: Int = CameraSelector.LENS_FACING_BACK,
@@ -22,6 +39,7 @@ class CameraBaseState(
 ) {
     var lensFacing by mutableStateOf(initialLensFacing)
     var permissionGranted by mutableStateOf(initialPermissionGranted)
+    var flashMode by mutableStateOf(FlashMode.OFF)
     var error by mutableStateOf<CameraError?>(null)
 
     fun flipCamera() {
