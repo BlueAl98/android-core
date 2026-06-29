@@ -44,22 +44,14 @@ import java.io.File
  */
 @Composable
 fun CameraBase(
-    state: CameraBaseState = rememberCameraBaseState(),
     modifier: Modifier = Modifier,
+    state: CameraBaseState = rememberCameraBaseState(),
     onPermissionRequest: () -> Unit = {},
     permissionContent: @Composable BoxScope.(onRequest: () -> Unit) -> Unit = { onRequest ->
         DefaultCameraPermissionContent(onRequest)
     },
     overlayContent: @Composable BoxScope.(scope: CameraScope) -> Unit = { scope ->
-        CameraControls(
-            onCapture = { scope.saveToCache { } },
-            onFlip = scope::flipCamera,
-            flashMode = state.flashMode,
-            onFlashToggle = { newMode ->
-                state.flashMode = newMode
-                scope.setFlashMode(newMode)
-            }
-        )
+        CameraControls(scope = scope, state = state)
     },
     errorContent: @Composable BoxScope.(error: CameraError, onDismiss: () -> Unit) -> Unit = { error, onDismiss ->
         DefaultCameraErrorContent(error, onDismiss)
@@ -85,7 +77,7 @@ fun CameraBase(
             override fun saveToCache(onResult: (CaptureResult) -> Unit) =
                 cameraManager.saveToCache(onResult)
 
-            override fun saveToFile(file: File, onResult: (CaptureResult) -> Unit) =
+            override fun saveToFile(file: File?, onResult: (CaptureResult) -> Unit) =
                 cameraManager.saveToFile(file, onResult)
 
             override fun flipCamera() = state.flipCamera()

@@ -1,6 +1,7 @@
 package com.nayibit.cameraBase.presentation
 
 import android.content.res.Configuration
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -37,6 +38,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import java.io.File
 
 /**
  * Default camera overlay. All controls except capture are optional — pass null to hide.
@@ -50,16 +52,24 @@ import androidx.compose.ui.unit.dp
  */
 @Composable
 fun BoxScope.CameraControls(
-    onCapture: () -> Unit,
-    onFlip: (() -> Unit)? = null,
+    scope: CameraScope,
+    state: CameraBaseState,
     onClose: (() -> Unit)? = null,
-    flashMode: FlashMode? = null,
-    onFlashToggle: (FlashMode) -> Unit = {},
     captureButtonSize: Dp = 72.dp,
     overlayColor: Color = Color.Black.copy(alpha = 0.35f)
 ) {
+    val context = LocalContext.current
     val isLandscape =
         LocalConfiguration.current.orientation == Configuration.ORIENTATION_LANDSCAPE
+
+    val onCapture = {
+        scope.saveToFile {}
+    }
+    val onFlip: () -> Unit = { scope.flipCamera() }
+    val onFlashToggle: (FlashMode) -> Unit = { newMode ->
+        state.flashMode = newMode
+        scope.setFlashMode(newMode)
+    }
 
     Box(
         Modifier
@@ -72,7 +82,7 @@ fun BoxScope.CameraControls(
                 onCapture = onCapture,
                 onFlip = onFlip,
                 onClose = onClose,
-                flashMode = flashMode,
+                flashMode = state.flashMode,
                 onFlashToggle = onFlashToggle,
                 captureButtonSize = captureButtonSize,
                 overlayColor = overlayColor
@@ -82,7 +92,7 @@ fun BoxScope.CameraControls(
                 onCapture = onCapture,
                 onFlip = onFlip,
                 onClose = onClose,
-                flashMode = flashMode,
+                flashMode = state.flashMode,
                 onFlashToggle = onFlashToggle,
                 captureButtonSize = captureButtonSize,
                 overlayColor = overlayColor

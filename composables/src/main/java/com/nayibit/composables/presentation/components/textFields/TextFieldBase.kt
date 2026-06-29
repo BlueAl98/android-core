@@ -10,6 +10,8 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Visibility
+import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.Icon
@@ -21,7 +23,6 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextFieldColors
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -31,10 +32,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.platform.testTag
-import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.input.ImeAction
-import androidx.compose.ui.text.input.TextFieldValue
+import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 
@@ -66,38 +66,57 @@ fun TextFieldBase(
     warningMessage: String? = null,
     warningIcon: (@Composable () -> Unit)? = null,
     warningIconTint: Color? = null,
-    charCounterAlignment: Alignment = Alignment.BottomEnd
+    charCounterAlignment: Alignment = Alignment.BottomEnd,
+    passwordMode: Boolean = false
 ) {
 
     var warningPopupExpanded by remember { mutableStateOf(false) }
+    var passwordVisible by remember { mutableStateOf(false) }
 
-    val effectiveTrailingIcon: (@Composable () -> Unit)? = if (showWarning) {
-        {
-            Box {
-                IconButton(onClick = { if (warningMessage != null) warningPopupExpanded = true }) {
-                    warningIcon?.invoke() ?: Icon(
-                        imageVector = Icons.Default.Warning,
-                        contentDescription = "Warning",
-                        tint = warningIconTint ?: errorColor
+    val effectiveTrailingIcon: (@Composable () -> Unit)? = when {
+        passwordMode -> {
+            {
+                IconButton(onClick = { passwordVisible = !passwordVisible }) {
+                    Icon(
+                        imageVector = if (passwordVisible) Icons.Default.Visibility else Icons.Default.VisibilityOff,
+                        contentDescription = if (passwordVisible) "Hide password" else "Show password"
                     )
                 }
-                if (warningMessage != null) {
-                    DropdownMenu(
-                        expanded = warningPopupExpanded,
-                        onDismissRequest = { warningPopupExpanded = false }
-                    ) {
-                        Text(
-                            text = warningMessage,
-                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp),
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurface
+            }
+        }
+        showWarning -> {
+            {
+                Box {
+                    IconButton(onClick = { if (warningMessage != null) warningPopupExpanded = true }) {
+                        warningIcon?.invoke() ?: Icon(
+                            imageVector = Icons.Default.Warning,
+                            contentDescription = "Warning",
+                            tint = warningIconTint ?: errorColor
                         )
+                    }
+                    if (warningMessage != null) {
+                        DropdownMenu(
+                            expanded = warningPopupExpanded,
+                            onDismissRequest = { warningPopupExpanded = false }
+                        ) {
+                            Text(
+                                text = warningMessage,
+                                modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp),
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurface
+                            )
+                        }
                     }
                 }
             }
         }
+        else -> trailingIcon
+    }
+
+    val effectiveVisualTransformation = if (passwordMode && !passwordVisible) {
+        PasswordVisualTransformation()
     } else {
-        trailingIcon
+        visualTransformation
     }
 
     val colors: TextFieldColors = TextFieldDefaults.colors(
@@ -134,7 +153,7 @@ fun TextFieldBase(
             textStyle = textStyle,
             keyboardOptions = keyboardOptions,
             keyboardActions = keyboardActions,
-            visualTransformation = visualTransformation,
+            visualTransformation = effectiveVisualTransformation,
             colors = colors
         )
 

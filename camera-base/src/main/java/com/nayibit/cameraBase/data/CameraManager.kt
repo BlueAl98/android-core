@@ -121,13 +121,15 @@ class CameraManager(
     /**
      * Captures and saves the image to [file]. Result delivers on the main thread.
      */
-    fun saveToFile(file: File, onResult: (CaptureResult) -> Unit) {
+    fun saveToFile(file: File?, onResult: (CaptureResult) -> Unit) {
         val capture = imageCapture ?: run {
             onResult(CaptureResult.Failure(IllegalStateException("Call startPreview() first")))
             return
         }
+        val resolveFile = file ?: File(context.filesDir, "IMG_${System.currentTimeMillis()}.jpg")
 
-        val options = ImageCapture.OutputFileOptions.Builder(file).build()
+
+        val options = ImageCapture.OutputFileOptions.Builder(resolveFile).build()
 
         capture.takePicture(
             options,

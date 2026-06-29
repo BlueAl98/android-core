@@ -32,6 +32,8 @@ android {
 }
 
 dependencies {
+
+    implementation (libs.androidx.material.icons.extended)
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
     implementation(libs.androidx.activity.compose)
@@ -57,7 +59,7 @@ mavenPublishing {
     publishToMavenCentral(SonatypeHost.CENTRAL_PORTAL)
     signAllPublications()
 
-    coordinates("io.github.blueal98", "composables", "1.0.0")
+    coordinates("io.github.blueal98", "composables", "1.0.1")
 
     pom {
         name.set("Nayibit Composables")
