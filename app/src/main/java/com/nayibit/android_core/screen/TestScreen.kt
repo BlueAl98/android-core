@@ -30,7 +30,10 @@ fun TestScreen(){
         ImageCropper(
             imageBitmap = image,
            // initialPoints = savedPoints, // or null
-            onCropConfirmed = { result -> /* result.points, result.coordinates */ },
+            onCropConfirmed = { result ->
+               println(result.points)
+               println(result.coordinates.contentToString())
+                },
             onCropRejected = { message -> /* show snackbar/toast */ }
         )
     }

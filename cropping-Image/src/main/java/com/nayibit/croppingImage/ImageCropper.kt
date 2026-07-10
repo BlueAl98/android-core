@@ -1,5 +1,6 @@
 package com.nayibit.croppingImage
 
+import android.content.pm.ActivityInfo
 import android.graphics.Bitmap
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
@@ -24,6 +25,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -50,6 +52,7 @@ import com.nayibit.croppingImage.model.ImageCropperColors
 import com.nayibit.croppingImage.model.Point
 import com.nayibit.croppingImage.utils.OffsetSaver
 import com.nayibit.croppingImage.utils.buildCropResult
+import com.nayibit.croppingImage.utils.findActivity
 import com.nayibit.croppingImage.utils.isInsideQuadrant
 import kotlin.math.absoluteValue
 
@@ -64,10 +67,22 @@ fun ImageCropper(
     modifier: Modifier = Modifier,
     initialPoints: Map<CropCorner, Point>? = null,
     colors: ImageCropperColors = ImageCropperColors.defaults(),
+    lockToLandscape: Boolean = true,
     onCropConfirmed: (CropResult) -> Unit,
     onCropRejected: (String) -> Unit = {}
 ) {
     val context = LocalContext.current
+
+    if (lockToLandscape) {
+        DisposableEffect(Unit) {
+            val activity = context.findActivity()
+            val previousOrientation = activity?.requestedOrientation
+            activity?.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE
+            onDispose {
+                activity?.requestedOrientation = previousOrientation ?: ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED
+            }
+        }
+    }
 
     var imageSize by remember { mutableStateOf(IntSize.Zero) }
     var imageOffset by remember { mutableStateOf(Offset.Zero) }
