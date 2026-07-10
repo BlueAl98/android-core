@@ -44,6 +44,7 @@ dependencies {
     implementation(project(":composables"))
     implementation(project(":errorManager"))
     implementation(project(":camera-base"))
+    implementation(project(":cropping-Image"))
 
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
