@@ -1,6 +1,7 @@
 package com.nayibit.croppingImage
 
 import android.content.pm.ActivityInfo
+import android.content.res.Configuration
 import android.graphics.Bitmap
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
@@ -10,11 +11,13 @@ import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.asPaddingValues
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -54,6 +57,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.IntSize
@@ -72,6 +76,8 @@ private const val MIN_RECT_WIDTH = 500f
 private const val MIN_RECT_HEIGHT = 100f
 private const val CORNER_TOUCH_RADIUS = 80f
 private const val CROP_TOO_SMALL_MESSAGE = "El área seleccionada es demasiado pequeña"
+private const val ACTION_PANEL_WEIGHT = 0.2f
+private const val IMAGE_AREA_WEIGHT = 1f - ACTION_PANEL_WEIGHT
 
 @Composable
 fun ImageCropper(
@@ -114,9 +120,13 @@ fun ImageCropper(
     var activeCorner by remember { mutableStateOf<CropCorner?>(null) }
     var activeCornerOffset by remember { mutableStateOf(Offset.Zero) }
 
+    val isLandscape = LocalConfiguration.current.orientation == Configuration.ORIENTATION_LANDSCAPE
+
     val screenWidth = remember { context.resources.displayMetrics.widthPixels }
     val screenHeight = remember { context.resources.displayMetrics.heightPixels }
-    val canvasWidth = screenWidth / 1.5
+    // In landscape the action panel reserves ACTION_PANEL_WEIGHT of the width, so the
+    // image only has IMAGE_AREA_WEIGHT of the screen to fit into.
+    val canvasWidth = if (isLandscape) (screenWidth * IMAGE_AREA_WEIGHT) / 1.5 else screenWidth / 1.5
     val canvasHeight = screenHeight / 1.5
 
     val aspectRatio = imageBitmap.width.toFloat() / imageBitmap.height.toFloat()
@@ -139,81 +149,78 @@ fun ImageCropper(
 
     val initialMargin = 50f
 
-    Box(
-        modifier = modifier
-            .fillMaxSize()
-            .background(colors.background)
-            .pointerInput(Unit) {
-                detectDragGestures(
-                    onDragStart = { offset ->
-                        when {
-                            (offset - topLeft).getDistance() < CORNER_TOUCH_RADIUS -> {
-                                isCornerPressed = true
-                                activeCorner = CropCorner.TOP_LEFT
-                                activeCornerOffset = topLeft
-                            }
-                            (offset - topRight).getDistance() < CORNER_TOUCH_RADIUS -> {
-                                isCornerPressed = true
-                                activeCorner = CropCorner.TOP_RIGHT
-                                activeCornerOffset = topRight
-                            }
-                            (offset - bottomLeft).getDistance() < CORNER_TOUCH_RADIUS -> {
-                                isCornerPressed = true
-                                activeCorner = CropCorner.BOTTOM_LEFT
-                                activeCornerOffset = bottomLeft
-                            }
-                            (offset - bottomRight).getDistance() < CORNER_TOUCH_RADIUS -> {
-                                isCornerPressed = true
-                                activeCorner = CropCorner.BOTTOM_RIGHT
-                                activeCornerOffset = bottomRight
-                            }
-                        }
-                    },
-                    onDragEnd = {
-                        isCornerPressed = false
-                        activeCorner = null
-                    },
-                    onDragCancel = {
-                        isCornerPressed = false
-                        activeCorner = null
-                    },
-                    onDrag = { _, dragAmount ->
-                        val (x, y) = dragAmount
-                        when (activeCorner) {
-                            CropCorner.TOP_LEFT -> {
-                                val newTopLeft = topLeft + Offset(x, y)
-                                if (isInsideQuadrant(newTopLeft, imageOffset, imageSize, CropCorner.TOP_LEFT)) {
-                                    topLeft = newTopLeft
-                                    activeCornerOffset = newTopLeft
-                                }
-                            }
-                            CropCorner.TOP_RIGHT -> {
-                                val newTopRight = topRight + Offset(x, y)
-                                if (isInsideQuadrant(newTopRight, imageOffset, imageSize, CropCorner.TOP_RIGHT)) {
-                                    topRight = newTopRight
-                                    activeCornerOffset = newTopRight
-                                }
-                            }
-                            CropCorner.BOTTOM_LEFT -> {
-                                val newBottomLeft = bottomLeft + Offset(x, y)
-                                if (isInsideQuadrant(newBottomLeft, imageOffset, imageSize, CropCorner.BOTTOM_LEFT)) {
-                                    bottomLeft = newBottomLeft
-                                    activeCornerOffset = newBottomLeft
-                                }
-                            }
-                            CropCorner.BOTTOM_RIGHT -> {
-                                val newBottomRight = bottomRight + Offset(x, y)
-                                if (isInsideQuadrant(newBottomRight, imageOffset, imageSize, CropCorner.BOTTOM_RIGHT)) {
-                                    bottomRight = newBottomRight
-                                    activeCornerOffset = newBottomRight
-                                }
-                            }
-                            else -> Unit
+    val cropGestureModifier = Modifier.pointerInput(Unit) {
+        detectDragGestures(
+            onDragStart = { offset ->
+                when {
+                    (offset - topLeft).getDistance() < CORNER_TOUCH_RADIUS -> {
+                        isCornerPressed = true
+                        activeCorner = CropCorner.TOP_LEFT
+                        activeCornerOffset = topLeft
+                    }
+                    (offset - topRight).getDistance() < CORNER_TOUCH_RADIUS -> {
+                        isCornerPressed = true
+                        activeCorner = CropCorner.TOP_RIGHT
+                        activeCornerOffset = topRight
+                    }
+                    (offset - bottomLeft).getDistance() < CORNER_TOUCH_RADIUS -> {
+                        isCornerPressed = true
+                        activeCorner = CropCorner.BOTTOM_LEFT
+                        activeCornerOffset = bottomLeft
+                    }
+                    (offset - bottomRight).getDistance() < CORNER_TOUCH_RADIUS -> {
+                        isCornerPressed = true
+                        activeCorner = CropCorner.BOTTOM_RIGHT
+                        activeCornerOffset = bottomRight
+                    }
+                }
+            },
+            onDragEnd = {
+                isCornerPressed = false
+                activeCorner = null
+            },
+            onDragCancel = {
+                isCornerPressed = false
+                activeCorner = null
+            },
+            onDrag = { _, dragAmount ->
+                val (x, y) = dragAmount
+                when (activeCorner) {
+                    CropCorner.TOP_LEFT -> {
+                        val newTopLeft = topLeft + Offset(x, y)
+                        if (isInsideQuadrant(newTopLeft, imageOffset, imageSize, CropCorner.TOP_LEFT)) {
+                            topLeft = newTopLeft
+                            activeCornerOffset = newTopLeft
                         }
                     }
-                )
+                    CropCorner.TOP_RIGHT -> {
+                        val newTopRight = topRight + Offset(x, y)
+                        if (isInsideQuadrant(newTopRight, imageOffset, imageSize, CropCorner.TOP_RIGHT)) {
+                            topRight = newTopRight
+                            activeCornerOffset = newTopRight
+                        }
+                    }
+                    CropCorner.BOTTOM_LEFT -> {
+                        val newBottomLeft = bottomLeft + Offset(x, y)
+                        if (isInsideQuadrant(newBottomLeft, imageOffset, imageSize, CropCorner.BOTTOM_LEFT)) {
+                            bottomLeft = newBottomLeft
+                            activeCornerOffset = newBottomLeft
+                        }
+                    }
+                    CropCorner.BOTTOM_RIGHT -> {
+                        val newBottomRight = bottomRight + Offset(x, y)
+                        if (isInsideQuadrant(newBottomRight, imageOffset, imageSize, CropCorner.BOTTOM_RIGHT)) {
+                            bottomRight = newBottomRight
+                            activeCornerOffset = newBottomRight
+                        }
+                    }
+                    else -> Unit
+                }
             }
-    ) {
+        )
+    }
+
+    val imageAreaContent: @Composable BoxScope.() -> Unit = {
         Image(
             bitmap = imageBit,
             contentDescription = null,
@@ -352,66 +359,110 @@ fun ImageCropper(
                 }
             }
         }
+    }
 
-        Row(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(WindowInsets.navigationBars.asPaddingValues())
-                .padding(end = 32.dp),
-            horizontalArrangement = Arrangement.End
+    val actionPanelContent: @Composable (Modifier) -> Unit = { panelModifier ->
+        Surface(
+            shape = RoundedCornerShape(20.dp),
+            color = colors.panelBackground,
+            shadowElevation = 6.dp,
+            modifier = panelModifier
         ) {
+            Column {
+                CropActionTile(
+                    icon = Icons.Default.Refresh,
+                    label = "Restablecer",
+                    iconTint = colors.resetIcon,
+                    labelColor = colors.resetLabelText,
+                    containerColor = colors.resetContainer,
+                    onClick = {
+                        topLeft = initialTopLeft
+                        topRight = initialTopRight
+                        bottomLeft = initialBottomLeft
+                        bottomRight = initialBottomRight
+                    }
+                )
+                HorizontalDivider(color = colors.dividerColor)
+                CropActionTile(
+                    icon = Icons.Default.Crop,
+                    label = "Recortar imagen",
+                    iconTint = colors.cropIcon,
+                    labelColor = colors.cropLabelText,
+                    containerColor = colors.cropContainer,
+                    onClick = {
+                        val selectedWidth = (topRight.x - topLeft.x).absoluteValue
+                        val selectedHeight = (bottomLeft.y - topLeft.y).absoluteValue
+                        val selectedWidthOpposite = (bottomRight.x - bottomLeft.x).absoluteValue
+                        val selectedHeightOpposite = (bottomRight.y - topRight.y).absoluteValue
+                        if (selectedWidth >= MIN_RECT_WIDTH && selectedHeight >= MIN_RECT_HEIGHT &&
+                            selectedWidthOpposite >= MIN_RECT_WIDTH && selectedHeightOpposite >= MIN_RECT_HEIGHT
+                        ) {
+                            onCropConfirmed(
+                                buildCropResult(
+                                    topLeft, topRight, bottomLeft, bottomRight,
+                                    imageBitmap, imageSize, imageOffset
+                                )
+                            )
+                        } else {
+                            onCropRejected(CROP_TOO_SMALL_MESSAGE)
+                        }
+                    }
+                )
+            }
+        }
+    }
+
+    if (isLandscape) {
+        // Landscape: the image and the action panel are laid out side by side so the
+        // panel reliably reserves ACTION_PANEL_WEIGHT of the width instead of floating
+        // on top of the image.
+        Row(
+            modifier = modifier
+                .fillMaxSize()
+                .background(colors.background)
+        ) {
+            Box(
+                modifier = Modifier
+                    .weight(IMAGE_AREA_WEIGHT)
+                    .fillMaxHeight()
+                    .then(cropGestureModifier)
+            ) {
+                imageAreaContent()
+            }
             Column(
-                modifier = Modifier.fillMaxSize(),
-                horizontalAlignment = Alignment.End,
+                modifier = Modifier
+                    .weight(ACTION_PANEL_WEIGHT)
+                    .fillMaxHeight()
+                    .padding(WindowInsets.navigationBars.asPaddingValues())
+                    .padding(horizontal = 12.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.Center
             ) {
-                Surface(
-                    shape = RoundedCornerShape(20.dp),
-                    color = colors.panelBackground,
-                    shadowElevation = 6.dp,
-                    modifier = Modifier.width(150.dp)
+                actionPanelContent(Modifier.fillMaxWidth())
+            }
+        }
+    } else {
+        Box(
+            modifier = modifier
+                .fillMaxSize()
+                .background(colors.background)
+                .then(cropGestureModifier)
+        ) {
+            imageAreaContent()
+
+            Row(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(WindowInsets.navigationBars.asPaddingValues())
+                    .padding(end = 32.dp),
+                horizontalArrangement = Arrangement.End
+            ) {
+                Column(
+                    modifier = Modifier.fillMaxSize(),
+                    horizontalAlignment = Alignment.End,
+                    verticalArrangement = Arrangement.Center
                 ) {
-                    Column {
-                        CropActionTile(
-                            icon = Icons.Default.Refresh,
-                            label = "Restablecer",
-                            iconTint = colors.resetIcon,
-                            labelColor = colors.resetLabelText,
-                            containerColor = colors.resetContainer,
-                            onClick = {
-                                topLeft = initialTopLeft
-                                topRight = initialTopRight
-                                bottomLeft = initialBottomLeft
-                                bottomRight = initialBottomRight
-                            }
-                        )
-                        HorizontalDivider(color = colors.dividerColor)
-                        CropActionTile(
-                            icon = Icons.Default.Crop,
-                            label = "Recortar imagen",
-                            iconTint = colors.cropIcon,
-                            labelColor = colors.cropLabelText,
-                            containerColor = colors.cropContainer,
-                            onClick = {
-                                val selectedWidth = (topRight.x - topLeft.x).absoluteValue
-                                val selectedHeight = (bottomLeft.y - topLeft.y).absoluteValue
-                                val selectedWidthOpposite = (bottomRight.x - bottomLeft.x).absoluteValue
-                                val selectedHeightOpposite = (bottomRight.y - topRight.y).absoluteValue
-                                if (selectedWidth >= MIN_RECT_WIDTH && selectedHeight >= MIN_RECT_HEIGHT &&
-                                    selectedWidthOpposite >= MIN_RECT_WIDTH && selectedHeightOpposite >= MIN_RECT_HEIGHT
-                                ) {
-                                    onCropConfirmed(
-                                        buildCropResult(
-                                            topLeft, topRight, bottomLeft, bottomRight,
-                                            imageBitmap, imageSize, imageOffset
-                                        )
-                                    )
-                                } else {
-                                    onCropRejected(CROP_TOO_SMALL_MESSAGE)
-                                }
-                            }
-                        )
-                    }
+                    actionPanelContent(Modifier.width(150.dp))
                 }
             }
         }

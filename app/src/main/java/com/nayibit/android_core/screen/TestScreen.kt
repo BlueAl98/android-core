@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -27,13 +28,18 @@ fun TestScreen(){
 
     val vm : CameraViewModel = viewModel()
     val st = vm.state.collectAsStateWithLifecycle()
+    val context = LocalContext.current
 
   //  CameraBase()
 
     Column(Modifier.padding(30.dp)) {
 
+        val testBitmap = remember {
+            context.assets.open("test.png").use { BitmapFactory.decodeStream(it) }
+        }
+
         ImageCropper(
-            imageBitmap = Bitmap.createBitmap(1000, 1000, Bitmap.Config.ARGB_8888),
+            imageBitmap = testBitmap,
             onCropConfirmed = {}
         )
 
