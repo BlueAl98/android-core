@@ -1,7 +1,11 @@
+import com.vanniktech.maven.publish.SonatypeHost
+
 plugins {
     alias(libs.plugins.android.library)
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
+    id("com.vanniktech.maven.publish") version "0.29.0"
+    id("signing")
 }
 
 android {
@@ -55,4 +59,41 @@ dependencies {
     androidTestImplementation(libs.androidx.ui.test.junit4)
     debugImplementation(libs.androidx.ui.tooling)
     debugImplementation(libs.androidx.ui.test.manifest)
+}
+
+signing {
+    useGpgCmd()
+}
+
+mavenPublishing {
+    publishToMavenCentral(SonatypeHost.CENTRAL_PORTAL)
+    signAllPublications()
+
+    coordinates("io.github.blueal98", "camera-base", "1.0.0")
+
+    pom {
+        name.set("Nayibit Camera Base")
+        description.set("Android CameraX base library with Compose UI and opt-in real-time frame analysis")
+        url.set("https://github.com/BlueAl98/android-core")
+
+        licenses {
+            license {
+                name.set("Apache License 2.0")
+                url.set("https://www.apache.org/licenses/LICENSE-2.0.txt")
+            }
+        }
+
+        developers {
+            developer {
+                id.set("BlueAl98")
+                name.set("Najib Loera")
+            }
+        }
+
+        scm {
+            connection.set("scm:git:git://github.com/BlueAl98/android-core.git")
+            developerConnection.set("scm:git:ssh://github.com/BlueAl98/android-core.git")
+            url.set("https://github.com/BlueAl98/android-core")
+        }
+    }
 }

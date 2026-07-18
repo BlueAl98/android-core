@@ -24,6 +24,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import com.nayibit.cameraBase.data.CameraManager
+import com.nayibit.cameraBase.data.analysis.FrameAnalyzer
 import com.nayibit.cameraBase.data.error.CameraError
 import com.nayibit.cameraBase.data.result.CaptureResult
 import java.io.File
@@ -34,6 +35,11 @@ import java.io.File
  *
  * @param state              Owns permission, lens-facing and error state.
  * @param modifier           Applied to the root [Box].
+ * @param frameAnalyzer      Optional. When set, live frames are also streamed to it on a
+ *                           background thread for real-time or throttled (see
+ *                           [com.nayibit.cameraBase.data.analysis.throttled]) CV/ML processing —
+ *                           object detection, OpenCV, TFLite, ML Kit, etc. Left null by default,
+ *                           which behaves exactly like before this parameter existed.
  * @param onPermissionRequest Called when the user taps the button in [permissionContent].
  *                           Wire your [ActivityResultLauncher] here.
  * @param permissionContent  Slot shown while [state].permissionGranted is false.
@@ -46,6 +52,7 @@ import java.io.File
 fun CameraBase(
     modifier: Modifier = Modifier,
     state: CameraBaseState = rememberCameraBaseState(),
+    frameAnalyzer: FrameAnalyzer? = null,
     onPermissionRequest: () -> Unit = {},
     permissionContent: @Composable BoxScope.(onRequest: () -> Unit) -> Unit = { onRequest ->
         DefaultCameraPermissionContent(onRequest)
@@ -102,6 +109,7 @@ fun CameraBase(
                                     previewView = previewView,
                                     lensFacing = state.lensFacing,
                                     flashMode = state.flashMode.toCameraX(),
+                                    frameAnalyzer = frameAnalyzer,
                                     onError = { state.error = it }
                                 )
                             }

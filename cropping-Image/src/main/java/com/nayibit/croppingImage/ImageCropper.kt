@@ -5,7 +5,9 @@ import android.graphics.Bitmap
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectDragGestures
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -14,15 +16,20 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Camera
+import androidx.compose.material.icons.filled.Crop
 import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
@@ -36,12 +43,17 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.BlendMode
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ClipOp
 import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.clipPath
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.IntSize
@@ -56,8 +68,8 @@ import com.nayibit.croppingImage.utils.findActivity
 import com.nayibit.croppingImage.utils.isInsideQuadrant
 import kotlin.math.absoluteValue
 
-private const val MIN_RECT_WIDTH = 600f
-private const val MIN_RECT_HEIGHT = 200f
+private const val MIN_RECT_WIDTH = 500f
+private const val MIN_RECT_HEIGHT = 100f
 private const val CORNER_TOUCH_RADIUS = 80f
 private const val CROP_TOO_SMALL_MESSAGE = "El área seleccionada es demasiado pequeña"
 
@@ -262,14 +274,42 @@ fun ImageCropper(
             clipPath(selectionPath, clipOp = ClipOp.Difference) {
                 drawRect(colors.overlay, blendMode = BlendMode.SrcOver)
             }
+
+            // Rule-of-thirds guide lines, dashed, inside the selection.
+            val dashEffect = PathEffect.dashPathEffect(floatArrayOf(14f, 10f), 0f)
+            fun lerp(a: Offset, b: Offset, t: Float) = Offset(
+                a.x + (b.x - a.x) * t,
+                a.y + (b.y - a.y) * t
+            )
+            for (t in floatArrayOf(1f / 3f, 2f / 3f)) {
+                drawLine(
+                    color = colors.gridLine,
+                    start = lerp(topLeft, bottomLeft, t),
+                    end = lerp(topRight, bottomRight, t),
+                    strokeWidth = 2f,
+                    pathEffect = dashEffect
+                )
+                drawLine(
+                    color = colors.gridLine,
+                    start = lerp(topLeft, topRight, t),
+                    end = lerp(bottomLeft, bottomRight, t),
+                    strokeWidth = 2f,
+                    pathEffect = dashEffect
+                )
+            }
+
             drawLine(colors.frameLine, topLeft, topRight, strokeWidth = 5f)
             drawLine(colors.frameLine, topRight, bottomRight, strokeWidth = 5f)
             drawLine(colors.frameLine, bottomRight, bottomLeft, strokeWidth = 5f)
             drawLine(colors.frameLine, bottomLeft, topLeft, strokeWidth = 5f)
-            drawCircle(colors.cornerHandle, 9f, topLeft)
-            drawCircle(colors.cornerHandle, 9f, topRight)
-            drawCircle(colors.cornerHandle, 9f, bottomLeft)
-            drawCircle(colors.cornerHandle, 9f, bottomRight)
+
+            val handleFill = 11f
+            val handleBorder = 13f
+            val handles = listOf(topLeft, topRight, bottomLeft, bottomRight)
+            handles.forEach { handle ->
+                drawCircle(colors.cornerHandle, handleFill, handle)
+                drawCircle(colors.cornerHandleBorder, handleBorder, handle, style = Stroke(width = 3f))
+            }
         }
 
         if (isCornerPressed) {
@@ -305,7 +345,7 @@ fun ImageCropper(
                     )
 
                     drawCircle(
-                        color = colors.cornerHandle,
+                        color = colors.cornerHandleBorder,
                         radius = 8f,
                         center = overlayCenter
                     )
@@ -314,61 +354,98 @@ fun ImageCropper(
         }
 
         Row(
-            modifier = modifier
+            modifier = Modifier
                 .fillMaxSize()
                 .padding(WindowInsets.navigationBars.asPaddingValues())
-                .padding(end = 40.dp)
+                .padding(end = 32.dp),
+            horizontalArrangement = Arrangement.End
         ) {
             Column(
-                modifier.fillMaxSize(),
+                modifier = Modifier.fillMaxSize(),
                 horizontalAlignment = Alignment.End,
                 verticalArrangement = Arrangement.Center
             ) {
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    IconButton(onClick = {
-                        topLeft = initialTopLeft
-                        topRight = initialTopRight
-                        bottomLeft = initialBottomLeft
-                        bottomRight = initialBottomRight
-                    }) {
-                        Icon(
-                            imageVector = Icons.Default.Refresh,
-                            contentDescription = null,
-                            tint = colors.resetIcon,
-                            modifier = modifier.size(65.dp)
+                Surface(
+                    shape = RoundedCornerShape(20.dp),
+                    color = colors.panelBackground,
+                    shadowElevation = 6.dp,
+                    modifier = Modifier.width(150.dp)
+                ) {
+                    Column {
+                        CropActionTile(
+                            icon = Icons.Default.Refresh,
+                            label = "Restablecer",
+                            iconTint = colors.resetIcon,
+                            labelColor = colors.resetLabelText,
+                            containerColor = colors.resetContainer,
+                            onClick = {
+                                topLeft = initialTopLeft
+                                topRight = initialTopRight
+                                bottomLeft = initialBottomLeft
+                                bottomRight = initialBottomRight
+                            }
+                        )
+                        HorizontalDivider(color = colors.dividerColor)
+                        CropActionTile(
+                            icon = Icons.Default.Crop,
+                            label = "Recortar imagen",
+                            iconTint = colors.cropIcon,
+                            labelColor = colors.cropLabelText,
+                            containerColor = colors.cropContainer,
+                            onClick = {
+                                val selectedWidth = (topRight.x - topLeft.x).absoluteValue
+                                val selectedHeight = (bottomLeft.y - topLeft.y).absoluteValue
+                                val selectedWidthOpposite = (bottomRight.x - bottomLeft.x).absoluteValue
+                                val selectedHeightOpposite = (bottomRight.y - topRight.y).absoluteValue
+                                if (selectedWidth >= MIN_RECT_WIDTH && selectedHeight >= MIN_RECT_HEIGHT &&
+                                    selectedWidthOpposite >= MIN_RECT_WIDTH && selectedHeightOpposite >= MIN_RECT_HEIGHT
+                                ) {
+                                    onCropConfirmed(
+                                        buildCropResult(
+                                            topLeft, topRight, bottomLeft, bottomRight,
+                                            imageBitmap, imageSize, imageOffset
+                                        )
+                                    )
+                                } else {
+                                    onCropRejected(CROP_TOO_SMALL_MESSAGE)
+                                }
+                            }
                         )
                     }
-                    Text(text = "Restablecer", color = colors.labelText)
-                    Spacer(modifier = modifier.weight(0.8f))
-                    IconButton(onClick = {
-                        val selectedWidth = (topRight.x - topLeft.x).absoluteValue
-                        val selectedHeight = (bottomLeft.y - topLeft.y).absoluteValue
-                        val selectedWidthOpposite = (bottomRight.x - bottomLeft.x).absoluteValue
-                        val selectedHeightOpposite = (bottomRight.y - topRight.y).absoluteValue
-                        if (selectedWidth >= MIN_RECT_WIDTH && selectedHeight >= MIN_RECT_HEIGHT &&
-                            selectedWidthOpposite >= MIN_RECT_WIDTH && selectedHeightOpposite >= MIN_RECT_HEIGHT
-                        ) {
-                            onCropConfirmed(
-                                buildCropResult(
-                                    topLeft, topRight, bottomLeft, bottomRight,
-                                    imageBitmap, imageSize, imageOffset
-                                )
-                            )
-                        } else {
-                            onCropRejected(CROP_TOO_SMALL_MESSAGE)
-                        }
-                    }) {
-                        Icon(
-                            imageVector = Icons.Default.Camera,
-                            contentDescription = null,
-                            tint = colors.cropIcon,
-                            modifier = modifier.size(65.dp)
-                        )
-                    }
-                    Text(text = "Recortar", color = colors.labelText)
-                    Spacer(modifier = modifier.weight(1f))
                 }
             }
         }
+    }
+}
+
+@Composable
+private fun CropActionTile(
+    icon: ImageVector,
+    label: String,
+    iconTint: Color,
+    labelColor: Color,
+    containerColor: Color,
+    onClick: () -> Unit
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(containerColor)
+            .clickable(
+                interactionSource = remember { MutableInteractionSource() },
+                indication = null,
+                onClick = onClick
+            )
+            .padding(vertical = 18.dp, horizontal = 12.dp),
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        Icon(
+            imageVector = icon,
+            contentDescription = label,
+            tint = iconTint,
+            modifier = Modifier.size(32.dp)
+        )
+        Spacer(modifier = Modifier.height(8.dp))
+        Text(text = label, color = labelColor, textAlign = TextAlign.Center)
     }
 }
