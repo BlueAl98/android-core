@@ -58,7 +58,7 @@ mavenPublishing {
     publishToMavenCentral(SonatypeHost.CENTRAL_PORTAL)
     signAllPublications()
 
-    coordinates("io.github.blueal98", "croppingImage", "1.1.0")
+    coordinates("io.github.blueal98", "croppingImage", "1.2.2")
 
     pom {
         name.set("Nayibit cropping images")

@@ -35,13 +35,14 @@ fun TestScreen(){
     Column(Modifier.padding(30.dp)) {
 
         val testBitmap = remember {
-            context.assets.open("test.png").use { BitmapFactory.decodeStream(it) }
+            context.assets.open("error.png").use { BitmapFactory.decodeStream(it) }
         }
 
         ImageCropper(
             imageBitmap = testBitmap,
-            onCropConfirmed = {}
-        )
+            onCropConfirmed = {},
+            lockToLandscape = true
+            )
 
     }
 

@@ -72,8 +72,8 @@ import com.nayibit.croppingImage.utils.findActivity
 import com.nayibit.croppingImage.utils.isInsideQuadrant
 import kotlin.math.absoluteValue
 
-private const val MIN_RECT_WIDTH = 500f
-private const val MIN_RECT_HEIGHT = 100f
+private const val DEFAULT_MIN_CROP_WIDTH_PERCENT = 0.1f
+private const val DEFAULT_MIN_CROP_HEIGHT_PERCENT = 0.1f
 private const val CORNER_TOUCH_RADIUS = 80f
 private const val CROP_TOO_SMALL_MESSAGE = "El área seleccionada es demasiado pequeña"
 private const val ACTION_PANEL_WEIGHT = 0.2f
@@ -86,9 +86,14 @@ fun ImageCropper(
     initialPoints: Map<CropCorner, Point>? = null,
     colors: ImageCropperColors = ImageCropperColors.defaults(),
     lockToLandscape: Boolean = true,
+    minCropWidthPercent: Float = DEFAULT_MIN_CROP_WIDTH_PERCENT,
+    minCropHeightPercent: Float = DEFAULT_MIN_CROP_HEIGHT_PERCENT,
     onCropConfirmed: (CropResult) -> Unit,
     onCropRejected: (String) -> Unit = {}
 ) {
+    require(minCropWidthPercent in 0f..1f) { "minCropWidthPercent must be between 0 and 1" }
+    require(minCropHeightPercent in 0f..1f) { "minCropHeightPercent must be between 0 and 1" }
+
     val context = LocalContext.current
 
     if (lockToLandscape) {
@@ -104,6 +109,8 @@ fun ImageCropper(
 
     var imageSize by remember { mutableStateOf(IntSize.Zero) }
     var imageOffset by remember { mutableStateOf(Offset.Zero) }
+    var lastImageSize by remember { mutableStateOf(IntSize.Zero) }
+    var lastImageOffset by remember { mutableStateOf(Offset.Zero) }
 
     // Saveable so the selection survives configuration changes instead of resetting.
     var topLeft by rememberSaveable(stateSaver = OffsetSaver) { mutableStateOf(Offset.Zero) }
@@ -266,7 +273,33 @@ fun ImageCropper(
                         initialTopRight = topRight
                         initialBottomLeft = bottomLeft
                         initialBottomRight = bottomRight
+                    } else if (lastImageSize != newImageSize || lastImageOffset != imageOffset) {
+                        // The box was re-measured (e.g. the forced landscape rotation settled
+                        // after the first layout pass) — rescale the existing selection into
+                        // the new bounds instead of leaving it at stale coordinates that can
+                        // fall outside the new, possibly narrower, image area.
+                        if (lastImageSize.width > 0 && lastImageSize.height > 0) {
+                            fun rescale(offset: Offset): Offset {
+                                val relX = (offset.x - lastImageOffset.x) / lastImageSize.width.toFloat()
+                                val relY = (offset.y - lastImageOffset.y) / lastImageSize.height.toFloat()
+                                return Offset(
+                                    imageOffset.x + relX * newImageSize.width,
+                                    imageOffset.y + relY * newImageSize.height
+                                )
+                            }
+                            topLeft = rescale(topLeft)
+                            topRight = rescale(topRight)
+                            bottomLeft = rescale(bottomLeft)
+                            bottomRight = rescale(bottomRight)
+                            initialTopLeft = rescale(initialTopLeft)
+                            initialTopRight = rescale(initialTopRight)
+                            initialBottomLeft = rescale(initialBottomLeft)
+                            initialBottomRight = rescale(initialBottomRight)
+                        }
                     }
+
+                    lastImageSize = newImageSize
+                    lastImageOffset = imageOffset
                 }
         )
 
@@ -390,12 +423,14 @@ fun ImageCropper(
                     labelColor = colors.cropLabelText,
                     containerColor = colors.cropContainer,
                     onClick = {
+                        val minRectWidth = imageSize.width * minCropWidthPercent
+                        val minRectHeight = imageSize.height * minCropHeightPercent
                         val selectedWidth = (topRight.x - topLeft.x).absoluteValue
                         val selectedHeight = (bottomLeft.y - topLeft.y).absoluteValue
                         val selectedWidthOpposite = (bottomRight.x - bottomLeft.x).absoluteValue
                         val selectedHeightOpposite = (bottomRight.y - topRight.y).absoluteValue
-                        if (selectedWidth >= MIN_RECT_WIDTH && selectedHeight >= MIN_RECT_HEIGHT &&
-                            selectedWidthOpposite >= MIN_RECT_WIDTH && selectedHeightOpposite >= MIN_RECT_HEIGHT
+                        if (selectedWidth >= minRectWidth && selectedHeight >= minRectHeight &&
+                            selectedWidthOpposite >= minRectWidth && selectedHeightOpposite >= minRectHeight
                         ) {
                             onCropConfirmed(
                                 buildCropResult(
