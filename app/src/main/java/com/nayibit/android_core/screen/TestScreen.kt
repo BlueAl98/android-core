@@ -11,6 +11,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -19,6 +20,7 @@ import com.nayibit.android_core.camera.CameraViewModel
 import com.nayibit.cameraBase.presentation.CameraBase
 import com.nayibit.cameraBase.presentation.CameraControls
 import com.nayibit.cameraBase.presentation.rememberCameraBaseState
+import com.nayibit.composables.presentation.components.dropMenus.DropdownMenuBase
 import com.nayibit.composables.presentation.components.textFields.TextFieldBase
 import com.nayibit.croppingImage.ImageCropper
 import com.nayibit.croppingImage.model.ImageCropperColors
@@ -34,7 +36,7 @@ fun TestScreen(){
 
     Column(Modifier.padding(30.dp)) {
 
-        val testBitmap = remember {
+    /*    val testBitmap = remember {
             context.assets.open("error.png").use { BitmapFactory.decodeStream(it) }
         }
 
@@ -42,7 +44,13 @@ fun TestScreen(){
             imageBitmap = testBitmap,
             onCropConfirmed = {},
             lockToLandscape = true
-            )
+            )*/
+
+        DropdownMenuBase(
+            items =  listOf("najib", "alex"),
+            selectedItem = "najib",
+            onItemSelected = {  },
+            labelSelector = {it})
 
     }
 
