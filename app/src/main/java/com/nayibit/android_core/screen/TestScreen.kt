@@ -6,10 +6,13 @@ import android.graphics.Canvas
 import android.graphics.Color
 import android.graphics.Paint
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
@@ -47,14 +50,30 @@ fun TestScreen(){
             lockToLandscape = true
             )*/
 
+        val tipoCasillaFocusRequester = remember { FocusRequester() }
+        val tipoEleccionFocusRequester = remember { FocusRequester() }
+
+
         DropdownMenuBase(
             searchable = true,
             items =  listOf(1, 2),
             selectedItem = 1,
             onItemSelected = {  },
             labelSelector = {it.toString()},
-            numbersOnly = true
+            numbersOnly = true,
+            nextFocusRequester = tipoCasillaFocusRequester
             )
+        DropdownMenuBase(
+            items =  listOf(1, 2),
+            selectedItem = 1,
+            onItemSelected = {  },
+            labelSelector = {it.toString()},
+            numbersOnly = true,
+            modifier = Modifier
+                .fillMaxWidth()
+                .focusRequester(tipoCasillaFocusRequester)
+        )
+
 
     }
 

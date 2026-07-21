@@ -134,15 +134,17 @@ fun <T> DropdownMenuBase(
                 )
                 .fillMaxWidth()
                 .onFocusChanged { focusState ->
-                    isFocused = focusState.isFocused
-                    if (focusState.isFocused && searchable && !expanded) {
-                        val text = selectedItem?.let { labelSelector(it) } ?: ""
-                        searchQuery = TextFieldValue(text, selection = TextRange(text.length))
+                    isFocused = focusState.isFocused || focusState.hasFocus
+                    if ((focusState.isFocused || focusState.hasFocus) && !expanded) {
+                        if (searchable) {
+                            val text = selectedItem?.let { labelSelector(it) } ?: ""
+                            searchQuery = TextFieldValue(text, selection = TextRange(text.length))
+                        }
                         expanded = true
                     }
                 }
                 .then(
-                    if (!searchable) Modifier.clickable(enabled = enabled) { expanded = !expanded }
+                    if (!searchable) Modifier.clickable(enabled = enabled) { expanded = true }
                     else Modifier
                 ),
             enabled = enabled
