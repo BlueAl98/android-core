@@ -3,6 +3,7 @@ package com.nayibit.composables.presentation.components.dropMenus
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowDropDown
@@ -31,7 +32,9 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.text.TextRange
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.TextFieldValue
 
@@ -58,6 +61,7 @@ fun <T> DropdownMenuBase(
     containerColor: Color = Color.Transparent,
 ) {
     val focusManager = LocalFocusManager.current
+    val keyboardController = LocalSoftwareKeyboardController.current
     var isFocused by remember { mutableStateOf(false) }
     val iconColor = if (isFocused) focusedColor else unfocusedColor
 
@@ -121,11 +125,53 @@ fun <T> DropdownMenuBase(
                 }
             },
             readOnly = !searchable,
+            singleLine = true,
             label = { Text(label) },
             leadingIcon = effectiveLeadingIcon,
             trailingIcon = effectiveTrailingIcon,
             colors = colors,
-            keyboardOptions = if (numbersOnly) KeyboardOptions(keyboardType = KeyboardType.Number) else KeyboardOptions.Default,
+            keyboardOptions = KeyboardOptions(
+                keyboardType = if (numbersOnly) KeyboardType.Number else KeyboardType.Text,
+                imeAction = if (nextFocusRequester != null) ImeAction.Next else ImeAction.Done
+            ),
+            keyboardActions = KeyboardActions(
+                onNext = {
+                    val matched = if (searchable) {
+                        items.firstOrNull { labelSelector(it).equals(searchQuery.text, ignoreCase = true) }
+                    } else {
+                        selectedItem
+                    }
+                    if (matched != null) {
+                        if (searchable) {
+                            onItemSelected(matched)
+                            searchQuery = TextFieldValue("")
+                        }
+                        expanded = false
+                        if (nextFocusRequester != null) {
+                            nextFocusRequester.requestFocus()
+                        } else {
+                            focusManager.clearFocus()
+                            keyboardController?.hide()
+                        }
+                    }
+                },
+                onDone = {
+                    val matched = if (searchable) {
+                        items.firstOrNull { labelSelector(it).equals(searchQuery.text, ignoreCase = true) }
+                    } else {
+                        selectedItem
+                    }
+                    if (matched != null) {
+                        if (searchable) {
+                            onItemSelected(matched)
+                            searchQuery = TextFieldValue("")
+                        }
+                        expanded = false
+                        focusManager.clearFocus()
+                        keyboardController?.hide()
+                    }
+                }
+            ),
             modifier = Modifier
                 .menuAnchor(
                     type = if (searchable) MenuAnchorType.PrimaryEditable
