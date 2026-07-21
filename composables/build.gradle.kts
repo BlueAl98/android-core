@@ -59,7 +59,7 @@ mavenPublishing {
     publishToMavenCentral(SonatypeHost.CENTRAL_PORTAL)
     signAllPublications()
 
-    coordinates("io.github.blueal98", "composables", "1.0.2")
+    coordinates("io.github.blueal98", "composables", "1.0.3")
 
     pom {
         name.set("Nayibit Composables")
