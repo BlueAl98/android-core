@@ -34,6 +34,7 @@ import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
@@ -52,6 +53,7 @@ fun TextFieldBase(
     maxChar: Int = 100,
     showCharCounter: Boolean = false,
     textRestriction: Boolean = false,
+    numbersOnly: Boolean = false,
     isError: Boolean = false,
     enabled: Boolean = true,
     shape: Shape = RoundedCornerShape(8.dp),
@@ -119,6 +121,12 @@ fun TextFieldBase(
         visualTransformation
     }
 
+    val effectiveKeyboardOptions = if (numbersOnly) {
+        keyboardOptions.copy(keyboardType = KeyboardType.Number)
+    } else {
+        keyboardOptions
+    }
+
     val colors: TextFieldColors = TextFieldDefaults.colors(
         focusedTextColor = MaterialTheme.colorScheme.onSurface,
         unfocusedTextColor = MaterialTheme.colorScheme.onSurface,
@@ -137,8 +145,9 @@ fun TextFieldBase(
         OutlinedTextField(
             value = value,
             onValueChange = { newText ->
+                val filteredText = if (numbersOnly) newText.filter { it.isDigit() } else newText
                 if (!textRestriction)
-                    onValueChange(newText)
+                    onValueChange(filteredText)
             },
             modifier = Modifier.fillMaxWidth().testTag("text_field_base"),
             label = label?.let { { Text(it) } },
@@ -151,7 +160,7 @@ fun TextFieldBase(
             enabled = enabled,
             shape = shape,
             textStyle = textStyle,
-            keyboardOptions = keyboardOptions,
+            keyboardOptions = effectiveKeyboardOptions,
             keyboardActions = keyboardActions,
             visualTransformation = effectiveVisualTransformation,
             colors = colors

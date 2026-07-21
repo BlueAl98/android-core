@@ -24,6 +24,7 @@ import com.nayibit.composables.presentation.components.dropMenus.DropdownMenuBas
 import com.nayibit.composables.presentation.components.textFields.TextFieldBase
 import com.nayibit.croppingImage.ImageCropper
 import com.nayibit.croppingImage.model.ImageCropperColors
+import java.util.concurrent.atomic.AtomicReferenceFieldUpdater
 
 @Composable
 fun TestScreen(){
@@ -47,10 +48,13 @@ fun TestScreen(){
             )*/
 
         DropdownMenuBase(
-            items =  listOf("najib", "alex"),
-            selectedItem = "najib",
+            searchable = true,
+            items =  listOf(1, 2),
+            selectedItem = 1,
             onItemSelected = {  },
-            labelSelector = {it})
+            labelSelector = {it.toString()},
+            numbersOnly = true
+            )
 
     }
 

@@ -3,6 +3,7 @@ package com.nayibit.composables.presentation.components.dropMenus
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.KeyboardArrowDown
@@ -31,6 +32,7 @@ import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.text.TextRange
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.TextFieldValue
 
 
@@ -45,6 +47,7 @@ fun <T> DropdownMenuBase(
     label: String = "Select Item",
     enabled: Boolean = true,
     searchable: Boolean = false,
+    numbersOnly: Boolean = false,
     showIconDropdown: Boolean = false,
     nextFocusRequester: FocusRequester? = null,
     leadingIcon: (@Composable () -> Unit)? = null,
@@ -108,13 +111,21 @@ fun <T> DropdownMenuBase(
             value = if (searchable && expanded) searchQuery
                     else TextFieldValue(selectedItem?.let { labelSelector(it) } ?: ""),
             onValueChange = { input ->
-                if (searchable) searchQuery = input
+                if (searchable) {
+                    searchQuery = if (numbersOnly) {
+                        val filtered = input.text.filter { it.isDigit() }
+                        input.copy(text = filtered, selection = TextRange(filtered.length))
+                    } else {
+                        input
+                    }
+                }
             },
             readOnly = !searchable,
             label = { Text(label) },
             leadingIcon = effectiveLeadingIcon,
             trailingIcon = effectiveTrailingIcon,
             colors = colors,
+            keyboardOptions = if (numbersOnly) KeyboardOptions(keyboardType = KeyboardType.Number) else KeyboardOptions.Default,
             modifier = Modifier
                 .menuAnchor(
                     type = if (searchable) MenuAnchorType.PrimaryEditable
