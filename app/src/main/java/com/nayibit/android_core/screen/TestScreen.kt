@@ -74,6 +74,14 @@ fun TestScreen(){
                 .focusRequester(tipoCasillaFocusRequester)
         )
 
+        DropdownMenuBase(
+            searchable = true,
+            items =  listOf(1, 2),
+            selectedItem = 1,
+            onItemSelected = {  },
+            labelSelector = {it.toString()},
+            numbersOnly = true)
+
 
     }
 

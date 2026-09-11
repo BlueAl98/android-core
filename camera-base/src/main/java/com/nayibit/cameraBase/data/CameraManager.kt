@@ -4,6 +4,8 @@ import android.Manifest
 import android.content.Context
 import android.content.pm.PackageManager
 import android.net.Uri
+import android.view.OrientationEventListener
+import android.view.Surface
 import androidx.camera.core.Camera
 import androidx.camera.core.CameraSelector
 import androidx.camera.core.ImageAnalysis
@@ -32,6 +34,10 @@ class CameraManager(
     private var imageAnalysis: ImageAnalysis? = null
     private var analysisExecutor: ExecutorService? = null
     private var camera: Camera? = null
+    // Only created/enabled when startPreview(autoRotateCapture = true) — see there. Null for
+    // every consumer that doesn't opt in, so there's no extra sensor registration or callback
+    // for the common case.
+    private var orientationEventListener: OrientationEventListener? = null
 
     fun hasPermission(): Boolean =
         ContextCompat.checkSelfPermission(context, Manifest.permission.CAMERA) ==
@@ -49,12 +55,19 @@ class CameraManager(
      *   for real-time or throttled (see [com.nayibit.cameraBase.data.analysis.throttled]) object
      *   detection / CV / ML processing. Left null (the default), no analyzer is bound and this
      *   behaves exactly as before: zero extra cost for preview/capture-only consumers.
+     * @param autoRotateCapture Optional, defaults to false. When true, an [OrientationEventListener]
+     *   tracks the device's physical orientation (independent of the Activity's own
+     *   `screenOrientation`, so this also fixes orientation-locked activities) and keeps
+     *   [ImageCapture.targetRotation] current, so a still shot taken while the device is held in
+     *   landscape saves upright instead of rotated. Left false (the default), no listener is ever
+     *   created and this behaves exactly as before this parameter existed.
      */
     fun startPreview(
         previewView: PreviewView,
         lensFacing: Int = CameraSelector.LENS_FACING_BACK,
         flashMode: Int = ImageCapture.FLASH_MODE_OFF,
         frameAnalyzer: FrameAnalyzer? = null,
+        autoRotateCapture: Boolean = false,
         onReady: () -> Unit = {},
         onError: (CameraError) -> Unit
     ) {
@@ -68,7 +81,7 @@ class CameraManager(
             try {
                 val provider = providerFuture.get()
                 cameraProvider = provider
-                bindCamera(provider, previewView, lensFacing, flashMode, frameAnalyzer, onReady, onError)
+                bindCamera(provider, previewView, lensFacing, flashMode, frameAnalyzer, autoRotateCapture, onReady, onError)
             } catch (e: Exception) {
                 onError(CameraError.InitFailed(e))
             }
@@ -81,6 +94,7 @@ class CameraManager(
         lensFacing: Int,
         flashMode: Int,
         frameAnalyzer: FrameAnalyzer?,
+        autoRotateCapture: Boolean,
         onReady: () -> Unit,
         onError: (CameraError) -> Unit
     ) {
@@ -117,10 +131,38 @@ class CameraManager(
             if (flashMode == ImageCapture.FLASH_MODE_ON) {
                 camera?.cameraControl?.enableTorch(true)
             }
+            setupOrientationListener(autoRotateCapture)
             onReady()
         } catch (e: Exception) {
             onError(CameraError.BindingFailed(e))
         }
+    }
+
+    /**
+     * Only ever called with [enabled] resolved from `startPreview(autoRotateCapture = ...)`.
+     * Tears down any previous listener first (a camera flip re-binds and calls this again) so at
+     * most one listener is ever registered. When [enabled] is false this is a no-op beyond that
+     * teardown — no listener, no sensor registration, matching pre-existing behavior exactly.
+     */
+    private fun setupOrientationListener(enabled: Boolean) {
+        orientationEventListener?.disable()
+        orientationEventListener = null
+
+        if (!enabled) return
+
+        orientationEventListener = object : OrientationEventListener(context) {
+            override fun onOrientationChanged(orientationDegrees: Int) {
+                if (orientationDegrees == ORIENTATION_UNKNOWN) return
+                imageCapture?.targetRotation = degreesToSurfaceRotation(orientationDegrees)
+            }
+        }.also { it.enable() }
+    }
+
+    private fun degreesToSurfaceRotation(degrees: Int): Int = when (degrees) {
+        in 45 until 135 -> Surface.ROTATION_270
+        in 135 until 225 -> Surface.ROTATION_180
+        in 225 until 315 -> Surface.ROTATION_90
+        else -> Surface.ROTATION_0
     }
 
     /**
@@ -195,5 +237,7 @@ class CameraManager(
         cameraProvider = null
         imageCapture = null
         camera = null
+        orientationEventListener?.disable()
+        orientationEventListener = null
     }
 }

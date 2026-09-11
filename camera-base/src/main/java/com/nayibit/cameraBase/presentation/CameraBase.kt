@@ -40,6 +40,11 @@ import java.io.File
  *                           [com.nayibit.cameraBase.data.analysis.throttled]) CV/ML processing —
  *                           object detection, OpenCV, TFLite, ML Kit, etc. Left null by default,
  *                           which behaves exactly like before this parameter existed.
+ * @param autoRotateCapture  Optional, defaults to false. When true, a still capture is saved
+ *                           upright regardless of how the device is physically held at shutter
+ *                           time (see [com.nayibit.cameraBase.data.CameraManager.startPreview]).
+ *                           Left false by default, which behaves exactly like before this
+ *                           parameter existed.
  * @param onPermissionRequest Called when the user taps the button in [permissionContent].
  *                           Wire your [ActivityResultLauncher] here.
  * @param permissionContent  Slot shown while [state].permissionGranted is false.
@@ -53,6 +58,7 @@ fun CameraBase(
     modifier: Modifier = Modifier,
     state: CameraBaseState = rememberCameraBaseState(),
     frameAnalyzer: FrameAnalyzer? = null,
+    autoRotateCapture: Boolean = false,
     onPermissionRequest: () -> Unit = {},
     permissionContent: @Composable BoxScope.(onRequest: () -> Unit) -> Unit = { onRequest ->
         DefaultCameraPermissionContent(onRequest)
@@ -110,6 +116,7 @@ fun CameraBase(
                                     lensFacing = state.lensFacing,
                                     flashMode = state.flashMode.toCameraX(),
                                     frameAnalyzer = frameAnalyzer,
+                                    autoRotateCapture = autoRotateCapture,
                                     onError = { state.error = it }
                                 )
                             }

@@ -22,11 +22,13 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextFieldColors
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.CompositionLocalProvider
+import kotlinx.coroutines.delay
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.focus.FocusRequester
@@ -77,6 +79,22 @@ fun <T> DropdownMenuBase(
 
     var expanded by remember { mutableStateOf(false) }
     var searchQuery by remember { mutableStateOf(TextFieldValue("")) }
+
+    // Suggestion popup visibility is intentionally decoupled from `expanded`: opening the popup
+    // in the same frame the IME starts animating open races Material3's
+    // ExposedDropdownMenuPositionProvider against the not-yet-settled window bounds, crashing
+    // with "Cannot coerce value to an empty range" when little vertical space is available
+    // (landscape). Delaying popup composition until just after the IME animation starts avoids
+    // that specific race.
+    var popupVisible by remember { mutableStateOf(false) }
+    LaunchedEffect(expanded, searchable) {
+        if (expanded) {
+            if (searchable) delay(220)
+            popupVisible = true
+        } else {
+            popupVisible = false
+        }
+    }
 
     val displayedItems = remember(searchQuery.text, items) {
         if (searchable && searchQuery.text.isNotEmpty()) {
@@ -197,7 +215,7 @@ fun <T> DropdownMenuBase(
         )
 
         ExposedDropdownMenu(
-            expanded = expanded,
+            expanded = popupVisible,
             onDismissRequest = {
                 expanded = false
                 searchQuery = TextFieldValue("")
